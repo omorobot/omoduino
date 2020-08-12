@@ -13,7 +13,7 @@ Stop 버튼을 누르면 정지합니다.
 장애물을 감지하면 로봇은 멈추고 장애물이 사라지면 다시 출발합니다.  
 
 <div align="center">
-  <img src="images/sensors.png">
+  <img src="images/linetracer_intro.png">
 </div>
 
 
