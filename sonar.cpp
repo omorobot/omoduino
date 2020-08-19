@@ -41,3 +41,7 @@ bool SONAR::detected() {
     }
     return _detected;
 }
+
+void SONAR::set_range(double cm) {
+    _detection_range = cm;
+}

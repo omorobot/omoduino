@@ -21,6 +21,7 @@ public:
     double  measure_cm(void);
     void    set_detection_range(double cm);
     bool    detected();
+    void    set_range(double cm);
 private:
 
     double _measure_prev;
