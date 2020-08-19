@@ -57,6 +57,9 @@ void setup() {
    pinMode(PIN_ECHO1, INPUT);
    pinMode(PIN_TRIGGER2, OUTPUT);
    pinMode(PIN_ECHO2, INPUT);
+   // Set detection range for sonar
+   sonar_L.set_range(60.0);
+   sonar_R.set_range(60.0);
    // Set drive mode to Line tracer
    r1.set_driveMode(R1DRV_LineTracer);
    // Set timeout to stop vehicle when line out detected : 2000ms
