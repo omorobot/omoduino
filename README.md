@@ -132,13 +132,98 @@ r1.stop();
 r1.pause();
 ```
 
-잠시 멈춤 상태에서 다시 출발하기 위해서는 go() 함수를 호출합니다.
+잠시 멈춤 상태에서 다시 출발하기 위해서는 go() 함수를 호출합니다.  
+마지막으로 설정한 속도로 복귀합니다.  
 ```C++
 r1.go();
 ```
 
+## 초음파센서 활용
 
-----
+예제에서는 2개의 초음파 센서를 로봇의 좌/우측에 장착하여  
+물체가 range 안에 인식되는 경우 로봇을 멈추게 할 수 있습니다.  
+
+### 헤더 선언 및 클래스 설정
+
+먼저 sonar.h 헤더를 include하고 클래스를 선언합니다.
+```C++
+#include "src/omoduino/sonar.h"
+```
+
+- 초음파 센서를 사용하기 위해서는 Trigger 출력 핀과 Echo 입력 핀이 선언되어 있어야합니다.  
+- 좌측의 센서에 각각 2, 3번이 할당되고 우측 센서에 4, 5번 핀이 할당된 경우,  다음과 같이 설정합니다.  
+- 초음파 센서를 짧은 간격으로 계속해서 읽는 경우 echo에 의한 오류가 있을 수 있으므로 간격을 두고 읽기 위해 sonar_update_millis_last 라는 타이머 변수를 추가합니다.  
+- 초음파 센서 값을 저장하기 위해 double형 변수를 선언합니다.  
+- 초음파 센서를 번갈아가며 읽기 위해 sonar_read_state 변수를 추가합니다.  
+
+```C++
+const int PIN_TRIGGER1 = 2;
+const int PIN_ECHO1 = 3;
+const int PIN_TRIGGER2 = 4;
+const int PIN_ECHO2 = 5;
+SONAR sonar_L = SONAR(PIN_TRIGGER1, PIN_ECHO1);
+SONAR sonar_R = SONAR(PIN_TRIGGER2, PIN_ECHO2);
+uint64_t  sonar_update_millis_last = millis();
+double    sonar_distance_L = 0.0;
+double    sonar_distance_R = 0.0;
+int       sonar_read_state = 0;
+```
+
+### sonar update 함수 구현
+
+이제 초음파센서 값을 주기적으로 읽기 위한 함수를 추가합니다.  
+이 함수를 loop에서 주기적으로 호출하면 각 sonar_distance 값이 변경됩니다.  
+
+```C++
+void loop_update_sonar()
+{
+   // Read left and right sonar measurement
+   if(sonar_read_state++%2) {
+      sonar_distance_L = sonar_L.measure_cm();
+   } else {
+      sonar_distance_R = sonar_R.measure_cm();
+   }
+}
+```
+
+### setup 설정
+
+Setup 함수 안에서 각 센서에 대하여 다음과 같이 감지 거리를 설정합니다.
+```C++
+void setup() {
+  ...
+   // Set detection range for sonar
+   sonar_L.set_range(60.0);
+   sonar_R.set_range(60.0);
+```
+
+### loop 함수 추가
+
+이제 loop함수 안에 초음파센서를 읽고 처리하는 루틴을 추가합니다.  
+여기에서 loop_update_sonar() 함수를 호출한 다음 좌/우 센서에 감지된 물체가 있는지 확인하여 로봇을 정지시킬지, 다시 출발할 것인지를 결정합니다.
+
+```C++
+void loop() {
+  ...
+  if(millis() - sonar_update_millis_last > 19) {    //For every 20ms
+    loop_update_sonar();
+    //Check if anything detected in the sensor
+    if(sonar_L.detected() || sonar_R.detected()) {
+      r1.pause();
+    } else {
+    //Robot is cleared
+    if(r1.is_going()) {
+      r1.go();
+      }
+    }
+    sonar_update_millis_last = millis();
+  }
+```
+
+### 데모 동영상 
+
+[![OMOROBOT arduino linetracer demo video]](https://i9.ytimg.com/vi/VIHxDkUGfM0/mq1.jpg)](https://youtu.be/VIHxDkUGfM0)
+
 
 ## 라이센스 및 권리
 
