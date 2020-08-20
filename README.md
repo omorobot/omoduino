@@ -45,12 +45,18 @@ Stop 버튼을 누르면 정지합니다.
 ## 참조 라이브러리
 
  이 프로젝트는 다음 라이브러리를 참조합니다.
-  - [arduino-mcp2515 라이브러리](https://github.com/autowp/arduino-mcp2515)
+  - [arduino-mcp2515 라이브러리](https://github.com/autowp/arduino-mcp2515) 에서 zip 파일을 다운로드합니다.  
+  - Arduino IDE를 열고 스케치 > Include Library > Add .ZIP Library 를 선택하여 다운로드한 파일을 선택  
+<div align="center">
+  <img src="images/add_library.png">
+</div>
 
 ## 사용 방법
 
-사용 방법을 익히는 가장 좋은 방법은 example 폴더의 코드를 복사하여 실행하는 것입니다.  
-Arduino IDE에서 새로운 프로젝트를 생성한 다음 .ino 파일이 있는 폴더에 /src 폴더를 만들고 이 프로젝트를 git clone 하면 됩니다. 
+사용 방법을 익히는 가장 쉬운 방법은 example 폴더의 코드를 복사하여 실행하는 것입니다.  
+Arduino IDE에서 새로운 프로젝트를 생성한 다음  
+.ino 파일이 있는 폴더에 /src 폴더를 만들고 이 프로젝트를 git clone 하면 됩니다.  
+또는 프로젝트 루트 폴더에 /src 폴더를 만들고 git repository를 zip파일로 다운로드 한 다음 압축을 해제합니다.  
 
 ### 클래스 선언
 
