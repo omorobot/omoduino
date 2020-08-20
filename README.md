@@ -222,7 +222,7 @@ void loop() {
 
 ### 데모 동영상 
 
-[![OMOROBOT arduino linetracer demo video]](https://i9.ytimg.com/vi/VIHxDkUGfM0/mq1.jpg)](https://youtu.be/VIHxDkUGfM0)
+[![](http://img.youtube.com/vi/VIHxDkUGfM0/0.jpg)](http://www.youtube.com/watch?v=VIHxDkUGfM0 "")
 
 
 ## 라이센스 및 권리
