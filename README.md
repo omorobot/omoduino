@@ -1,8 +1,9 @@
 # OMODUINO
 
 이 프로젝트는 아듀이노 보드를 사용하여 OMOROBOT의 R-1 로봇 플랫폼과 관련 센서 모듈을 통해 다양한 이동로봇 응용 프로그램을 제작하는데 도움이 되기 위해 작성된 라이브러리입니다.  
+
 <div align="center">
-  <img src="images/omo_r1.png">
+  <img src="images/omo_r1_arduino.png">
 </div>
 
 ## R-1 라인트레이서 소개
