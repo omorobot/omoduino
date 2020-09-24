@@ -40,7 +40,8 @@ public:
     
     typedef void (*R1_NewDataClientEvent)(R1_MessageType);
     OMOROBOT_R1();
-    OMOROBOT_R1(uint16_t cspin);
+    OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
+
     void    begin(void);
     void    onNewData(R1_NewDataClientEvent cbEvent);
     void    spin(void);
