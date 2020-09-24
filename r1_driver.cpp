@@ -78,6 +78,10 @@ OMOROBOT_R1::OMOROBOT_R1() {
   _mcp2515 = new MCP2515(10);
   _drive_mode = R1DRV_None;
 }
+OMOROBOT_R1::OMOROBOT_R1(uint16_t cspin) {
+  _mcp2515 = new MCP2515(cspin);
+  _drive_mode = R1DRV_None;
+}
 
 void OMOROBOT_R1::begin() {
   SPI.begin();
