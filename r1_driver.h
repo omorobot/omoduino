@@ -25,7 +25,8 @@ class MCP2515;
 enum R1_MessageType{
     R1MSG_ODO,
     R1MSG_LINEPOS,
-    R1MSG_LINEOUT
+    R1MSG_LINEOUT,
+    R1MSG_CONVEYOR
 };
 
 enum R1_DriveMode{
@@ -41,6 +42,7 @@ public:
     typedef void (*R1_NewDataClientEvent)(R1_MessageType);
     OMOROBOT_R1();
     OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
+    OMOROBOT_R1(MCP2515* mcp2515);
 
     void    begin(void);
     void    onNewData(R1_NewDataClientEvent cbEvent);
@@ -49,6 +51,8 @@ public:
     void    request_odo();
     void    set_driveMode(R1_DriveMode mode);
     void    set_lineoutTime(int ms);
+    void    can_linePos(struct can_frame lineMsg);
+    void    can_odo(struct can_frame odoMsg);
     void    go(int target_speed);
     void    go(void);
     void    stop();
@@ -58,7 +62,7 @@ public:
     int     get_odo_r();
     int8_t  get_linePos();
     int     get_lineoutTimer();
-
+    int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
 private:
     
     MCP2515 *_mcp2515;
@@ -75,7 +79,7 @@ private:
 
     uint64_t _3ms_loop_millis_last;
     uint64_t _10ms_loop_millis_last;
-    int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
+    bool    _can_rx_extern = false;             //Can rx read performed externally
     //void    speed_control(void);
     //void    line_control(void);
 };

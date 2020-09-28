@@ -74,21 +74,38 @@ void line_control(void)
     _goal_W = 0;
   }
 }
+/**
+*   @brief Initialize MCP2515 with default CS pin for Arduino Uno
+*/
 OMOROBOT_R1::OMOROBOT_R1() {
   _mcp2515 = new MCP2515(10);
   _drive_mode = R1DRV_None;
 }
-
+/**
+*   @brief Initialize MCP2515 with different CS pin for Arduino Mega 2560 board
+*/
 OMOROBOT_R1::OMOROBOT_R1(uint16_t cspin) {
   _mcp2515 = new MCP2515(cspin);
   _drive_mode = R1DRV_None;
 }
-
+/**
+* @brief Initialize with MCP2515 object as external reference
+*/
+OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
+  _mcp2515 = mcp2515;
+  _drive_mode = R1DRV_None;
+  _can_rx_extern = true;
+}
+/**
+* @brief Begin initialize items
+*/
 void OMOROBOT_R1::begin() {
   SPI.begin();
-  _mcp2515->reset();
-  _mcp2515->setBitrate(CAN_500KBPS);
-  _mcp2515->setNormalMode();
+  if(!_can_rx_extern) {
+    _mcp2515->reset();
+    _mcp2515->setBitrate(CAN_500KBPS);
+    _mcp2515->setNormalMode();
+  }
   can_TxMsg_init(&_canTxMsg_Motor, 0x4, 8);
   can_TxMsg_init(&_canTxMsg_Odo, 0x4, 8);
   _odoRequest_millis_last = millis();
@@ -98,63 +115,70 @@ void OMOROBOT_R1::onNewData(R1_NewDataClientEvent cbEvent)
 {
   _cbEvent = cbEvent;
 }
+/**
+* @brief R1 main loop
+*/
 void OMOROBOT_R1::spin() {
-  if (_mcp2515->readMessage(&_canRxMsg) == MCP2515::ERROR_OK) {
-    int senderID = (_canRxMsg.can_id>>4);
-    int dlc = _canRxMsg.can_dlc;
-#ifdef DEBUG_DRIVER      
-    Serial.print(_canRxMsg.can_id, HEX); // print ID
-    Serial.print(" "); 
-    Serial.print(_canRxMsg.can_dlc, HEX); // print DLC
-    Serial.println();
-    
-    for (int i = 0; i<_canRxMsg.can_dlc; i++)  {  // print the data
-      Serial.print(_canRxMsg.data[i],HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-#endif
-    if(senderID == 0x02) { //From LINE sensor
-      switch(_canRxMsg.data[0]) {
-        case 1:   //Line detect
-          _isLineOut = false;
-          _line_pos = (int8_t)_canRxMsg.data[1];
-          //Serial.print(_line_pos);
-          //Serial.println();
-          _lineDetect_millis_last = millis();    //Update line detection time
-          _lineOut_timer = 0;
-#ifdef DEBUG_DRIVER
-          Serial.print("LINE POS: ");
-          Serial.print(_line_pos);
-          Serial.println();
-#endif
-          _cbEvent(R1MSG_LINEPOS);
-          break;
-        case 2:   //No line
-          _isLineOut = true;
-          _lineOut_timer = millis() - _lineDetect_millis_last;
-          if(_lineOut_timeOut_ms > 0) {
-            if(_lineOut_timer > _lineOut_timeOut_ms) {
-              _go_flag = false;     //Stop the line tracer
-            }
-          }
-          
-          _cbEvent(R1MSG_LINEOUT);
-          break;
-      }
-    } else if(senderID == 0x4) {
-      if(_canRxMsg.data[0] == 0x02) {
-        _odo_r = (_canRxMsg.data[1]|(_canRxMsg.data[2]<<8));
-        _odo_l = (_canRxMsg.data[3]|(_canRxMsg.data[4]<<8));
-        _cbEvent(R1MSG_ODO);
-      }
-#ifdef DEBUG_DRIVER
-      Serial.print("ODO: L= ");
-      Serial.print(_odo_l);
-      Serial.print(" R= ");
-      Serial.print(_odo_r);
+  if(!_can_rx_extern) {
+    if (_mcp2515->readMessage(&_canRxMsg) == MCP2515::ERROR_OK) {
+      int senderID = (_canRxMsg.can_id>>4);
+      int dlc = _canRxMsg.can_dlc;
+  #ifdef DEBUG_DRIVER      
+      Serial.print(_canRxMsg.can_id, HEX); // print ID
+      Serial.print(" "); 
+      Serial.print(_canRxMsg.can_dlc, HEX); // print DLC
       Serial.println();
-#endif
+      
+      for (int i = 0; i<_canRxMsg.can_dlc; i++)  {  // print the data
+        Serial.print(_canRxMsg.data[i],HEX);
+        Serial.print(" ");
+      }
+      Serial.println();
+  #endif
+      if(senderID == 0x02) { //From LINE sensor
+        switch(_canRxMsg.data[0]) {
+          case 1:   //Line detect
+            _isLineOut = false;
+            _line_pos = (int8_t)_canRxMsg.data[1];
+            //Serial.print(_line_pos);
+            //Serial.println();
+            _lineDetect_millis_last = millis();    //Update line detection time
+            _lineOut_timer = 0;
+  #ifdef DEBUG_DRIVER
+            Serial.print("LINE POS: ");
+            Serial.print(_line_pos);
+            Serial.println();
+  #endif
+            _cbEvent(R1MSG_LINEPOS);
+            break;
+          case 2:   //No line
+            _isLineOut = true;
+            _lineOut_timer = millis() - _lineDetect_millis_last;
+            if(_lineOut_timeOut_ms > 0) {
+              if(_lineOut_timer > _lineOut_timeOut_ms) {
+                _go_flag = false;     //Stop the line tracer
+              }
+            }
+            
+            _cbEvent(R1MSG_LINEOUT);
+            break;
+        }
+      } else if(senderID == 0x4) {
+        if(_canRxMsg.data[0] == 0x02) {
+          _odo_r = (_canRxMsg.data[1]|(_canRxMsg.data[2]<<8));
+          _odo_l = (_canRxMsg.data[3]|(_canRxMsg.data[4]<<8));
+          _cbEvent(R1MSG_ODO);
+        }
+  #ifdef DEBUG_DRIVER
+        Serial.print("ODO: L= ");
+        Serial.print(_odo_l);
+        Serial.print(" R= ");
+        Serial.print(_odo_r);
+        Serial.println();
+  #endif
+      } else if(senderID == 0x06) {   //From conveyor
+        
+      }
     }
   }
   if(_3ms_loop) {
@@ -174,6 +198,38 @@ void OMOROBOT_R1::spin() {
       _10ms_loop_millis_last = millis();
     }
   }
+}
+/**
+*  @brief Process line position message from can bus
+*/
+void OMOROBOT_R1::can_linePos(struct can_frame lineMsg)
+{
+  switch(lineMsg.data[0]) {
+  case 1:   //Line detect
+    _isLineOut = false;
+    _line_pos = (int8_t)lineMsg.data[1];
+    _lineDetect_millis_last = millis();    //Update line detection time
+    _lineOut_timer = 0;
+    break;
+  case 2:   //No line
+    _isLineOut = true;
+    _lineOut_timer = millis() - _lineDetect_millis_last;
+    if(_lineOut_timeOut_ms > 0) {
+      if(_lineOut_timer > _lineOut_timeOut_ms) {
+        _go_flag = false;     //Stop the line tracer
+      }
+    }
+    _cbEvent(R1MSG_LINEOUT);
+    break;
+  }
+}
+/**
+* @brief Process odoMsg from can bus
+*/
+void OMOROBOT_R1::can_odo(struct can_frame odoMsg)
+{
+    _odo_r = (odoMsg.data[1]|(odoMsg.data[2]<<8));
+    _odo_l = (odoMsg.data[3]|(odoMsg.data[4]<<8));
 }
 void OMOROBOT_R1::control_motor_VW(int V, int W)
 {
