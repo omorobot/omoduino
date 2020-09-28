@@ -79,21 +79,21 @@ void line_control(void)
 */
 OMOROBOT_R1::OMOROBOT_R1() {
   _mcp2515 = new MCP2515(10);
-  _drive_mode = R1DRV_None;
+  _drive_mode = R1DRV_DefaultMode;
 }
 /**
 *   @brief Initialize MCP2515 with different CS pin for Arduino Mega 2560 board
 */
 OMOROBOT_R1::OMOROBOT_R1(uint16_t cspin) {
   _mcp2515 = new MCP2515(cspin);
-  _drive_mode = R1DRV_None;
+  _drive_mode = R1DRV_DefaultMode;
 }
 /**
 * @brief Initialize with MCP2515 object as external reference
 */
 OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
   _mcp2515 = mcp2515;
-  _drive_mode = R1DRV_None;
+  _drive_mode = R1DRV_DefaultMode;
   _can_rx_extern = true;
 }
 /**
@@ -260,7 +260,7 @@ void OMOROBOT_R1::request_odo()
 void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
 {
   _drive_mode = mode;
-  if(_drive_mode == R1DRV_LineTracer) {
+  if(_drive_mode == R1DRV_LineTracerMode) {
     Serial.println("Set Line tracer mode");
     _line_error_accum = 0;
     _goal_V = 0;
