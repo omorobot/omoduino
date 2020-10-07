@@ -198,18 +198,49 @@ void OMOROBOT_R1::spin() {
       _10ms_loop_millis_last = millis();
     }
   }
+  if(millis() - _100ms_loop_millis_last > 99) {
+    if(_same_tag_reset_timer>0) {
+       if(_same_tag_reset_timer > 199) {
+         _same_tag_reset_timer-= 100;
+       } else {
+         _tag_data_prev[0] = 0;
+         _tag_data_prev[1] = 0;
+         _tag_data_prev[2] = 0;
+         _tag_data_prev[3] = 0;
+         _same_tag_reset_timer = 0;
+       }
+    }
+    _100ms_loop_millis_last = millis();
+  }
 }
 /**
 *  @brief Process line position message from can bus
 */
-void OMOROBOT_R1::can_linePos(struct can_frame lineMsg)
+void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
-  switch(lineMsg.data[0]) {
+  uint8_t same_tag_cnt = 0;
+  int i;
+  switch(can_rx.data[0]) {
   case 1:   //Line detect
     _isLineOut = false;
-    _line_pos = (int8_t)lineMsg.data[1];
+    _line_pos = (int8_t)can_rx.data[1];
     _lineDetect_millis_last = millis();    //Update line detection time
     _lineOut_timer = 0;
+    //Check if tag data is new one
+    for(i =0; i<4; i++) {
+      if(_tag_data_prev[i]!=can_rx.data[4+i]) {
+        same_tag_cnt++;
+      }
+    }
+    if(same_tag_cnt!=4) {
+      _tag_data_prev[0] = _tag_data[0] = can_rx.data[4];
+      _tag_data_prev[1] = _tag_data[1] = can_rx.data[5];
+      _tag_data_prev[2] = _tag_data[2] = can_rx.data[6];
+      _tag_data_prev[3] = _tag_data[3] = can_rx.data[7];
+      _cbEvent(R1MSG_NEW_TAG);
+    } else {
+      _same_tag_reset_timer = 2500;
+    }
     break;
   case 2:   //No line
     _isLineOut = true;
@@ -226,10 +257,10 @@ void OMOROBOT_R1::can_linePos(struct can_frame lineMsg)
 /**
 * @brief Process odoMsg from can bus
 */
-void OMOROBOT_R1::can_odo(struct can_frame odoMsg)
+void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
 {
-    _odo_r = (odoMsg.data[1]|(odoMsg.data[2]<<8));
-    _odo_l = (odoMsg.data[3]|(odoMsg.data[4]<<8));
+    _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
+    _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
 }
 void OMOROBOT_R1::control_motor_VW(int V, int W)
 {

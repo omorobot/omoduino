@@ -26,12 +26,16 @@ enum R1_MessageType{
     R1MSG_ODO,
     R1MSG_LINEPOS,
     R1MSG_LINEOUT,
-    R1MSG_CONVEYOR
+    R1MSG_NEW_TAG
 };
 
 enum R1_DriveMode{
     R1DRV_None,
     R1DRV_LineTracer
+};
+
+enum TAG_Type{
+    TAG_
 };
 
 class OMOROBOT_R1
@@ -51,8 +55,8 @@ public:
     void    request_odo();
     void    set_driveMode(R1_DriveMode mode);
     void    set_lineoutTime(int ms);
-    void    can_linePos(struct can_frame lineMsg);
-    void    can_odo(struct can_frame odoMsg);
+    void    new_can_line(struct can_frame can_rx);
+    void    new_can_odo(struct can_frame can_rx);
     void    go(int target_speed);
     void    go(void);
     void    stop();
@@ -68,20 +72,22 @@ private:
     MCP2515 *_mcp2515;
     R1_NewDataClientEvent _cbEvent;
     R1_DriveMode _drive_mode;
-    loop_event _3ms_loop;
-    loop_event _10ms_loop;
-    bool    _odoReset = false;
-    int     _odo_l;
-    int     _odo_r;
-    uint64_t _odoRequest_millis_last;
-    uint64_t _lineDetect_millis_last;            //Last time line detected millis
-    bool    _isLineOut = false;
+    loop_event  _3ms_loop;
+    loop_event  _10ms_loop;
+    bool        _odoReset = false;
+    int         _odo_l;
+    int         _odo_r;
+    uint64_t    _odoRequest_millis_last;
+    uint64_t    _lineDetect_millis_last;            //Last time line detected millis
+    bool        _isLineOut = false;
 
-    uint64_t _3ms_loop_millis_last;
-    uint64_t _10ms_loop_millis_last;
-    bool    _can_rx_extern = false;             //Can rx read performed externally
-    //void    speed_control(void);
-    //void    line_control(void);
+    uint64_t    _3ms_loop_millis_last;
+    uint64_t    _10ms_loop_millis_last;
+    uint64_t    _100ms_loop_millis_last;
+    bool        _can_rx_extern = false;             //Can rx read performed externally
+    uint8_t     _tag_data[4];
+    uint8_t     _tag_data_prev[4];
+    uint16_t    _same_tag_reset_timer;
 };
 
 #endif
