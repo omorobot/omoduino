@@ -25,13 +25,17 @@ class MCP2515;
 enum R1_MessageType{
     R1MSG_ODO,
     R1MSG_LINEPOS,
+<<<<<<< HEAD
     R1MSG_LINEOUT,
     R1MSG_NEW_TAG
+=======
+    R1MSG_LINEOUT
+>>>>>>> c8f9fa935f04e23bd2556e331ab14fcd03eac494
 };
 
 enum R1_DriveMode{
-    R1DRV_None,
-    R1DRV_LineTracer
+    R1DRV_DefaultMode,
+    R1DRV_LineTracerMode        ///Set to line tracer mode when Line sensor available
 };
 
 enum TAG_Type{
