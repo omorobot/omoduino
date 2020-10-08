@@ -25,8 +25,7 @@ class MCP2515;
 enum R1_MessageType{
     R1MSG_ODO,
     R1MSG_LINEPOS,
-    R1MSG_LINEOUT,
-    R1MSG_NEW_TAG
+    R1MSG_LINEOUT
 };
 
 enum R1_DriveMode{
@@ -35,8 +34,22 @@ enum R1_DriveMode{
 };
 
 enum TAG_Type{
-    TAG_
+    TAG_None    = 0,
+    TAG_DEPOT   = 0xA0,     //160
+    TAG_POU     = 0xA2,     //162
+    TAG_APPROACH= 0xAA,     //170
+    TAG_TURN    = 0xB0,     //176
+    TAG_CIN     = 0xC1,     //193
+    TAG_COUT    = 0xC0,      //192
+    TAG_SPEED   = 0xE0,     //224
+    TAG_SONAR   = 0xE2,     //226
+    TAG_READY   = 0xFE     //254
 };
+
+typedef struct {
+    uint8_t     bytes[4];
+    TAG_Type     type;
+} Tag_Struct;
 
 class OMOROBOT_R1
 {
@@ -44,12 +57,14 @@ class OMOROBOT_R1
 public:
     
     typedef void (*R1_NewDataClientEvent)(R1_MessageType);
+    typedef void (*R1_NewTagReadEvent)(Tag_Struct);
     OMOROBOT_R1();
     OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
     OMOROBOT_R1(MCP2515* mcp2515);
 
     void    begin(void);
     void    onNewData(R1_NewDataClientEvent cbEvent);
+    void    onNewTag(R1_NewTagReadEvent cbEvent);
     void    spin(void);
     void    control_motor_VW(int V, int W);
     void    request_odo();
@@ -70,24 +85,26 @@ public:
 private:
     
     MCP2515 *_mcp2515;
-    R1_NewDataClientEvent _cbEvent;
-    R1_DriveMode _drive_mode;
-    loop_event  _3ms_loop;
-    loop_event  _10ms_loop;
-    bool        _odoReset = false;
-    int         _odo_l;
-    int         _odo_r;
-    uint64_t    _odoRequest_millis_last;
-    uint64_t    _lineDetect_millis_last;            //Last time line detected millis
-    bool        _isLineOut = false;
+    R1_NewDataClientEvent   _cbDataEvent;
+    R1_NewTagReadEvent      _cbTagEvent;
+    R1_DriveMode            _drive_mode;
+    loop_event              _3ms_loop;
+    loop_event              _10ms_loop;
+    bool                    _odoReset = false;
+    int                     _odo_l;
+    int                     _odo_r;
+    uint64_t                _odoRequest_millis_last;
+    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
+    bool                    _isLineOut = false;
 
-    uint64_t    _3ms_loop_millis_last;
-    uint64_t    _10ms_loop_millis_last;
-    uint64_t    _100ms_loop_millis_last;
-    bool        _can_rx_extern = false;             //Can rx read performed externally
-    uint8_t     _tag_data[4];
-    uint8_t     _tag_data_prev[4];
-    uint16_t    _same_tag_reset_timer;
+    uint64_t                _3ms_loop_millis_last;
+    uint64_t                _10ms_loop_millis_last;
+    uint64_t                _100ms_loop_millis_last;
+    bool                    _can_rx_extern = false;             //Can rx read performed externally
+    //uint8_t     _tag_data[4];
+    uint8_t                 _tag_data_prev[4];
+    uint16_t                _same_tag_reset_timer;
+    Tag_Struct              _new_tagStr;
 };
 
 #endif

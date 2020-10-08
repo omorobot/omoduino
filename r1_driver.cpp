@@ -113,7 +113,11 @@ void OMOROBOT_R1::begin() {
 
 void OMOROBOT_R1::onNewData(R1_NewDataClientEvent cbEvent)
 {
-  _cbEvent = cbEvent;
+  _cbDataEvent = cbEvent;
+}
+void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent)
+{
+  _cbTagEvent = cbEvent;
 }
 /**
 * @brief R1 main loop
@@ -149,7 +153,7 @@ void OMOROBOT_R1::spin() {
             Serial.print(_line_pos);
             Serial.println();
   #endif
-            _cbEvent(R1MSG_LINEPOS);
+            _cbDataEvent(R1MSG_LINEPOS);
             break;
           case 2:   //No line
             _isLineOut = true;
@@ -160,14 +164,14 @@ void OMOROBOT_R1::spin() {
               }
             }
             
-            _cbEvent(R1MSG_LINEOUT);
+            _cbDataEvent(R1MSG_LINEOUT);
             break;
         }
       } else if(senderID == 0x4) {
         if(_canRxMsg.data[0] == 0x02) {
           _odo_r = (_canRxMsg.data[1]|(_canRxMsg.data[2]<<8));
           _odo_l = (_canRxMsg.data[3]|(_canRxMsg.data[4]<<8));
-          _cbEvent(R1MSG_ODO);
+          _cbDataEvent(R1MSG_ODO);
         }
   #ifdef DEBUG_DRIVER
         Serial.print("ODO: L= ");
@@ -233,11 +237,12 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       }
     }
     if(same_tag_cnt!=4) {
-      _tag_data_prev[0] = _tag_data[0] = can_rx.data[4];
-      _tag_data_prev[1] = _tag_data[1] = can_rx.data[5];
-      _tag_data_prev[2] = _tag_data[2] = can_rx.data[6];
-      _tag_data_prev[3] = _tag_data[3] = can_rx.data[7];
-      _cbEvent(R1MSG_NEW_TAG);
+      _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[4];
+      _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[5];
+      _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[6];
+      _tag_data_prev[3] = _new_tagStr.bytes[3] = can_rx.data[7];
+      _new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
+      _cbTagEvent(_new_tagStr);
     } else {
       _same_tag_reset_timer = 2500;
     }
@@ -250,7 +255,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
         _go_flag = false;     //Stop the line tracer
       }
     }
-    _cbEvent(R1MSG_LINEOUT);
+    _cbDataEvent(R1MSG_LINEOUT);
     break;
   }
 }
