@@ -32,6 +32,14 @@ enum R1_DriveMode{
     R1DRV_DefaultMode,
     R1DRV_LineTracerMode        ///Set to line tracer mode when Line sensor available
 };
+enum Drive_DirectionType{
+    Drive_Forward,
+    Drive_Reverse
+};
+enum Line_AlignmentType{
+    Line_Forward,
+    Line_Reverse
+};
 
 enum TAG_Type{
     TAG_None    = 0,
@@ -82,6 +90,7 @@ public:
     int8_t  get_linePos();
     int     get_lineoutTimer();
     int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
+    void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
 private:
     
     MCP2515 *_mcp2515;
