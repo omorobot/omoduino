@@ -27,7 +27,8 @@ int       _goal_V;                // Velocity(mm/s) to be sent to Motor via CAN
 int       _goal_W;                // W(mrad/s) to be sent to Motor via CAN
 int       _cmd_speed;             // commanded speed finally set to goal_V
 bool      _go_flag;               // Set true to start linetracer
-
+int       _v_dir = 1;             // V forward = 1, reverse = -1
+int       _w_dir = 1;             // Line sensor fwd = 1, rear = -1
 void speed_control(void)
 {
   if(_go_flag) {
@@ -100,8 +101,9 @@ OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
 * @brief Begin initialize items
 */
 void OMOROBOT_R1::begin() {
-  SPI.begin();
+  
   if(!_can_rx_extern) {
+    SPI.begin();
     _mcp2515->reset();
     _mcp2515->setBitrate(CAN_500KBPS);
     _mcp2515->setNormalMode();
@@ -125,6 +127,7 @@ void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent)
 void OMOROBOT_R1::spin() {
   if(!_can_rx_extern) {
     if (_mcp2515->readMessage(&_canRxMsg) == MCP2515::ERROR_OK) {
+      
       int senderID = (_canRxMsg.can_id>>4);
       int dlc = _canRxMsg.can_dlc;
   #ifdef DEBUG_DRIVER      
@@ -270,6 +273,8 @@ void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
 void OMOROBOT_R1::control_motor_VW(int V, int W)
 {
     _canTxMsg_Motor.data[0] = CAN_MOTOR_CMD_VW;
+    V = V*_v_dir;
+    W = W*_w_dir;
     _canTxMsg_Motor.data[1] = V&0xFF;
     _canTxMsg_Motor.data[2] = (V>>8)&0xFF;
     _canTxMsg_Motor.data[3] = W&0xFF;
@@ -306,6 +311,19 @@ void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
     _10ms_loop = &line_control;
     _3ms_loop_millis_last = millis();
     _10ms_loop_millis_last = millis();
+  }
+}
+void OMOROBOT_R1::set_drive_direction(Drive_DirectionType dir, Line_AlignmentType line)
+{
+  if(dir == Drive_Forward) {
+    _v_dir = 1;
+  }else if(dir == Drive_Reverse) {
+    _v_dir = -1;
+  }
+  if(line == Line_Forward) {
+    _w_dir = 1;
+  }else if(line == Line_Reverse) {
+    _w_dir = -1;
   }
 }
 void OMOROBOT_R1::set_lineoutTime(int ms)
@@ -363,13 +381,13 @@ int OMOROBOT_R1::can_TxMsg_init(can_frame* frame, int id, int dlc)
     for(int i = 0; i<dlc; i++) {
         frame->data[i] = 0;
     }
-#ifdef DEBUG_DRIVER    
+//#ifdef DEBUG_DRIVER    
     Serial.print("Init: ID= 0x");
     Serial.print(frame->can_id, HEX);
     Serial.print(" DLC= ");
     Serial.print(frame->can_dlc);
     Serial.println();
-#endif    
+//#endif    
     return 0;
 }
 
