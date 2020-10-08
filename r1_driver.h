@@ -25,12 +25,8 @@ class MCP2515;
 enum R1_MessageType{
     R1MSG_ODO,
     R1MSG_LINEPOS,
-<<<<<<< HEAD
     R1MSG_LINEOUT,
     R1MSG_NEW_TAG
-=======
-    R1MSG_LINEOUT
->>>>>>> c8f9fa935f04e23bd2556e331ab14fcd03eac494
 };
 
 enum R1_DriveMode{
