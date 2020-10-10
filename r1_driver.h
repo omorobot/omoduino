@@ -91,6 +91,7 @@ public:
     int     get_lineoutTimer();
     int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
     void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
+    void    start_turn(int turn_odo_cnt);
 private:
     
     MCP2515 *_mcp2515;
@@ -110,10 +111,12 @@ private:
     uint64_t                _10ms_loop_millis_last;
     uint64_t                _100ms_loop_millis_last;
     bool                    _can_rx_extern = false;             //Can rx read performed externally
-    //uint8_t     _tag_data[4];
     uint8_t                 _tag_data_prev[4];
     uint16_t                _same_tag_reset_timer;
     Tag_Struct              _new_tagStr;
+    uint8_t                 _turn_state;                //Turn process state
+    uint16_t                _turn_odo_cnt;              //Turn odo count to stop turn
+    void                    turn_process(void);
 };
 
 #endif

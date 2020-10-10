@@ -404,3 +404,12 @@ int OMOROBOT_R1::can_TxMsg_init(can_frame* frame, int id, int dlc)
     return 0;
 }
 
+void OMOROBOT_R1::turn_process(void)
+{
+  switch(_turn_state) {
+    case 0:
+    break;
+    case 1:
+    break;
+  }
+}
