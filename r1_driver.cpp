@@ -242,12 +242,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
     if(same_tag_cnt>0){
       Serial.println(same_tag_cnt);
     }
-    Serial.print("New tag:");
-    Serial.print(can_rx.data[4]);Serial.print(",");
-    Serial.print(can_rx.data[5]);Serial.print(",");
-    Serial.print(can_rx.data[6]);Serial.print(",");
-    Serial.print(can_rx.data[7]);Serial.println();
-    if(same_tag_cnt==3) {
+    if(same_tag_cnt>0) {
       _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[4];
       _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[5];
       _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[6];
