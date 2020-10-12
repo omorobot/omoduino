@@ -17,9 +17,10 @@
 #define CAN_MOTOR_CMD_VW        0x81
 #define CAN_MOTOR_ODO_REQUEST   0x82
 #define CAN_MOTOR_ODO_RESET     0x83
+#define DEFAULT_TURN_W          100
 
-//#define DEBUG_DRIVER      //Uncomment this to print can messages on Serial port
-
+//#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
+//#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
 class MCP2515;
 
 enum R1_MessageType{
@@ -40,6 +41,10 @@ enum Line_AlignmentType{
     Line_Forward,
     Line_Reverse
 };
+enum Turn_DirectionType{
+    Turn_Right,
+    Turn_Left
+};
 
 enum TAG_Type{
     TAG_None    = 0,
@@ -56,7 +61,7 @@ enum TAG_Type{
 
 typedef struct {
     uint8_t     bytes[4];
-    TAG_Type     type;
+    TAG_Type    type;
 } Tag_Struct;
 
 class OMOROBOT_R1
@@ -91,7 +96,8 @@ public:
     int     get_lineoutTimer();
     int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
     void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
-    void    start_turn(int turn_odo_cnt);
+    void    start_turn(Turn_DirectionType dir, int turn_odo_cnt);
+    void    set_turn_speed(uint16_t turn_W);
 private:
     
     MCP2515 *_mcp2515;
@@ -100,9 +106,8 @@ private:
     R1_DriveMode            _drive_mode;
     loop_event              _3ms_loop;
     loop_event              _10ms_loop;
-    bool                    _odoReset = false;
-    int                     _odo_l;
-    int                     _odo_r;
+    //bool                    _odo_reset = false;
+
     uint64_t                _odoRequest_millis_last;
     uint64_t                _lineDetect_millis_last;            //Last time line detected millis
     bool                    _isLineOut = false;
@@ -113,10 +118,7 @@ private:
     bool                    _can_rx_extern = false;             //Can rx read performed externally
     uint8_t                 _tag_data_prev[4];
     uint16_t                _same_tag_reset_timer;
-    Tag_Struct              _new_tagStr;
-    uint8_t                 _turn_state;                //Turn process state
-    uint16_t                _turn_odo_cnt;              //Turn odo count to stop turn
-    void                    turn_process(void);
+    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
 };
 
 #endif

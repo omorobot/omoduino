@@ -29,6 +29,18 @@ int       _cmd_speed;             // commanded speed finally set to goal_V
 bool      _go_flag;               // Set true to start linetracer
 int       _v_dir = 1;             // V forward = 1, reverse = -1
 int       _w_dir = 1;             // Line sensor fwd = 1, rear = -1
+uint8_t   _turn_state = 0;
+uint8_t   _turn_cmd;
+uint16_t  _turn_odo_cnt;
+uint16_t  _turn_W = DEFAULT_TURN_W; //Turn speed when start to turn;
+bool      _odo_reset;
+int       _odo_l;
+int       _odo_r;
+
+void speed_control(void);
+void line_control(void);
+void turn_process(void);
+
 void speed_control(void)
 {
   if(_go_flag) {
@@ -73,6 +85,35 @@ void line_control(void)
 #endif
   } else {
     _goal_W = 0;
+  }
+  turn_process();
+}
+
+void turn_process(void)
+{
+  switch(_turn_state){
+  case 0:
+    //Do nothing here  
+    break;
+  case 1:   //Stop the vehicle
+    _go_flag = false;
+    if(_cmd_speed == 0) {
+      _turn_state = 2;
+    }
+    break;
+  case 2:
+    _odo_reset = true;
+    if(_odo_l == 0) {   //Check odometry reset
+      _turn_state = 3;
+    }
+    break;
+  case 3:               //Now start to turn
+    if(_turn_cmd == 0) {    //For right turn
+      _goal_W = -_turn_W;
+    } else if(_turn_cmd == 1) { //For left turn
+      _goal_W = _turn_W;
+    }
+    break;
   }
 }
 /**
@@ -205,7 +246,9 @@ void OMOROBOT_R1::spin() {
       _10ms_loop_millis_last = millis();
     }
   }
+
   if(millis() - _100ms_loop_millis_last > 99) {
+#ifdef SAME_TAG_REFRESH_EN
     if(_same_tag_reset_timer>0) {
        if(_same_tag_reset_timer > 199) {
          _same_tag_reset_timer-= 100;
@@ -217,8 +260,10 @@ void OMOROBOT_R1::spin() {
          _same_tag_reset_timer = 0;
        }
     }
+#endif
     _100ms_loop_millis_last = millis();
   }
+  
 }
 /**
 *  @brief Process line position message from can bus
@@ -291,7 +336,7 @@ void OMOROBOT_R1::control_motor_VW(int V, int W)
 }
 void OMOROBOT_R1::request_odo()
 {
-  if(_odoReset) {
+  if(_odo_reset) {
     _canTxMsg_Odo.data[0] = CAN_MOTOR_ODO_RESET;
   }else {
     _canTxMsg_Odo.data[0] = CAN_MOTOR_ODO_REQUEST;
@@ -338,6 +383,7 @@ void OMOROBOT_R1::set_lineoutTime(int ms)
 {
   _lineOut_timeOut_ms = ms;
 }
+/// Start vehicle with target speed
 void OMOROBOT_R1::go(int target_speed)
 {
   if(target_speed) {
@@ -346,40 +392,61 @@ void OMOROBOT_R1::go(int target_speed)
   }
   _go_flag = true;
 }
+/// Resume vehicle motion when paused. 
+/// If vehicle is stopped, calling this wouldn't start the vehicle
 void OMOROBOT_R1::go(void)
 {
   _target_speed = _resume_speed;
   _go_flag = true;
 }
+/// Clear go flag and stop the vehicle
 void OMOROBOT_R1::stop()
 {
   _target_speed = 0;
   _go_flag = false;
 }
+/// Only reset target speed to 0 and wait for go()
 void OMOROBOT_R1::pause()
 {
   _target_speed = 0;
 }
+
 bool OMOROBOT_R1::is_going()
 {
   return _go_flag;
 }
+
 int OMOROBOT_R1::get_odo_l()
 {
   return _odo_l;
 }
+
 int OMOROBOT_R1::get_odo_r()
 {
   return _odo_r;
 }
+
 int8_t OMOROBOT_R1::get_linePos()
 {
   return _line_pos;
 }
+
 int OMOROBOT_R1::get_lineoutTimer()
 {
   return _lineOut_timer;
 }
+/// Initiate turn process to start with direction and turn odometry count from wheel
+/// Turn angle is determined by odometry count and dependent to wheel size
+void OMOROBOT_R1::start_turn(Turn_DirectionType dir, int turn_odo_cnt)
+{
+  if(dir == Turn_Right) {
+    _turn_cmd = 0;
+  } else if(dir == Turn_Left) {
+    _turn_cmd = 1;
+  }
+  _turn_odo_cnt = turn_odo_cnt;
+}
+
 int OMOROBOT_R1::can_TxMsg_init(can_frame* frame, int id, int dlc)
 {
     if(id>255) return 1;
@@ -399,12 +466,3 @@ int OMOROBOT_R1::can_TxMsg_init(can_frame* frame, int id, int dlc)
     return 0;
 }
 
-void OMOROBOT_R1::turn_process(void)
-{
-  switch(_turn_state) {
-    case 0:
-    break;
-    case 1:
-    break;
-  }
-}
