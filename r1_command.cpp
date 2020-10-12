@@ -25,33 +25,34 @@ void R1_CanBus::begin_bus(void)
     _mcp2515->reset();
     _mcp2515->setBitrate(CAN_500KBPS);
     _mcp2515->setNormalMode();
+    Serial.println("R1 command bus begin");
 }
-void R1_CanBus::set_vehicle_type(R1_vehicleType type) {
-    v_type = type;
-    set_control_mode(ControlMode_vw);
+void R1_CanBus::set_vehicle_type(R1_VEHICLE_TYPE type) {
+    _vehicle_type = type;
+    set_control_mode(CONTROL_MODE_VW);
 }
-void R1_CanBus::set_control_mode(R1_controlModeType mode)
+void R1_CanBus::set_control_mode(R1_CONTROL_MODE_TYPE mode)
 {
     switch(mode) {
-    case ControlMode_vw:
-        if(v_type == R1_vtype_PL153) {
+    case CONTROL_MODE_VW:
+        if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
             _canCmd.cmd_byte = CAN_MOTOR_CMD_VW_PL;
         } else {
             _canCmd.cmd_byte = CAN_MOTOR_CMD_VW;
         }
         break;
-    case ControlMode_diffv:
-        if(v_type!=R1_vtype_PL153) {
+    case CONTROL_MODE_DIFFV:
+        if(_vehicle_type!=R1_VEHICLE_TYPE_PL153) {
             _canCmd.cmd_byte = CAN_MOTOR_CMD_DIFF_V;
         }
         break;
-    case ControlMode_rpm:
-        if(v_type!=R1_vtype_PL153) {
+    case CONTROL_MODE_RPM:
+        if(_vehicle_type!=R1_VEHICLE_TYPE_PL153) {
             _canCmd.cmd_byte = CAN_MOTOR_CMD_RPM;
         }
         break;
-    case ControlMode_dac_angle:
-        if(v_type == R1_vtype_PL153) {
+    case CONTROL_MODE_DAC_ANGLE:
+        if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
             _canCmd.cmd_byte = CAN_MOTOR_CMD_DAC_ANGLE;
         }
         break;
@@ -70,16 +71,16 @@ void R1_CanBus::scan(void)
 }
 
 
-void R1_CanBus::set_pl_lift_mode(PL153_LiftModeType mode)
+void R1_CanBus::set_pl_lift_mode(PL_LIFT_MODE_TYPE mode)
 {
     switch(mode) {
-        case PL153_lift_stop:
+        case PL_LIFT_STOP:
         _canCmd.aux_byte = 0;
         break;
-        case PL153_lift_up:
+        case PL_LIFT_UP:
         _canCmd.aux_byte = 1;
         break;
-        case PL153_lift_down:
+        case PL_LIFT_DOWN:
         _canCmd.aux_byte = 2;
         break;
     }
@@ -103,17 +104,38 @@ void R1_CanBus::request_odo(bool reset)
 }
 void R1_CanBus::cmd_VW(int16_t v_mm_s, int16_t w_mrad_s)
 {
-    _canCmd.cmd1 = v_mm_s;
-    _canCmd.cmd2 = w_mrad_s;
+    if(_control_mode!=CONTROL_MODE_VW) {
+        set_control_mode(CONTROL_MODE_VW);
+    }
+    _canCmd.data_1 = v_mm_s;
+    _canCmd.data_2 = w_mrad_s;
+    sendCommand(_canCmd);
+}
+void R1_CanBus::cmd_diffv(int16_t v_l_mm_s, int16_t v_r_mm_s)
+{
+    if(_control_mode!=CONTROL_MODE_DIFFV) {
+        set_control_mode(CONTROL_MODE_DIFFV);
+    }
+    _canCmd.data_1 = v_l_mm_s;
+    _canCmd.data_2 = v_r_mm_s;
+    sendCommand(_canCmd);
+}
+void R1_CanBus::cmd_pl_dac_angle(int16_t dac, int16_t angle)
+{
+    if(_control_mode!=CONTROL_MODE_DAC_ANGLE) {
+        set_control_mode(CONTROL_MODE_DAC_ANGLE);
+    }
+    _canCmd.data_1 = dac;
+    _canCmd.data_2 = angle;
     sendCommand(_canCmd);
 }
 void R1_CanBus::sendCommand(CanCommandType cmd)
 {
     _can_tx_cmd.data[0] = cmd.cmd_byte;
-    _can_tx_cmd.data[1] = cmd.cmd1&0xFF;
-    _can_tx_cmd.data[2] = (cmd.cmd1>>8)&0xFF;
-    _can_tx_cmd.data[3] = cmd.cmd2&0xFF;
-    _can_tx_cmd.data[4] = (cmd.cmd2>>8)&0xFF;
+    _can_tx_cmd.data[1] = cmd.data_1&0xFF;
+    _can_tx_cmd.data[2] = (cmd.data_1>>8)&0xFF;
+    _can_tx_cmd.data[3] = cmd.data_2&0xFF;
+    _can_tx_cmd.data[4] = (cmd.data_2>>8)&0xFF;
     _can_tx_cmd.data[5] = cmd.aux_byte;
     _mcp2515->sendMessage(&_can_tx_cmd);
 

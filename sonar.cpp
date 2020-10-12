@@ -7,6 +7,8 @@ double _detection_range = 40.0;
 SONAR::SONAR(int pin_trigger, int pin_echo) {
     _pin_trigger = pin_trigger;
     _pin_echo = pin_echo;
+    pinMode(_pin_trigger, OUTPUT);
+    pinMode(_pin_echo,  INPUT);
     _measure_prev = 0.0;
     _detected = false;
 }

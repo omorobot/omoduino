@@ -4,14 +4,12 @@
 #include "r1_driver.h"
 
 struct can_frame _canRxMsg;
-struct can_frame _canTxMsg_Motor;
-struct can_frame _canTxMsg_Odo;
 
 //#define DEBUG_CONTROL     // Un-comment to debug control output
 
-double    _pid_line_p = 36.0;
-double    _pid_line_i = 0.015;
-double    _pid_line_d = 1.0;
+double    _pid_line_p = 10.0;
+double    _pid_line_i = 0.1;
+double    _pid_line_d = 0.0;
 
 int8_t    _line_pos = 0;
 int       _line_error_accum = 0;
@@ -29,6 +27,7 @@ int       _cmd_speed;             // commanded speed finally set to goal_V
 bool      _go_flag;               // Set true to start linetracer
 int       _v_dir = 1;             // V forward = 1, reverse = -1
 int       _w_dir = 1;             // Line sensor fwd = 1, rear = -1
+int       _v_accel = 1;
 uint8_t   _turn_state = 0;
 uint8_t   _turn_cmd;
 uint16_t  _turn_odo_cnt;
@@ -40,21 +39,20 @@ int       _odo_r;
 void speed_control(void);
 void line_control(void);
 void turn_process(void);
-//void newCanRxEvent(struct can_frame _canRxMsg);
 
 void speed_control(void)
 {
   if(_go_flag) {
     if(_cmd_speed < _target_speed) {
-      _cmd_speed++;
+      _cmd_speed+=_v_accel;
     } else if(_cmd_speed > _target_speed) {
-      _cmd_speed--;
+      _cmd_speed-=_v_accel;
     }
   } else {
     if(_cmd_speed > 1) {
-      _cmd_speed--;
+      _cmd_speed-=_v_accel;
     } else if(_cmd_speed < -1) {
-      _cmd_speed++;
+      _cmd_speed+=_v_accel;
     } else {
       _cmd_speed = 0;
     }
@@ -143,11 +141,10 @@ OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
   _can_rx_extern = true;    //CanRx is scanned in external reference so no need to scan in the loop
 }
 
-void OMOROBOT_R1::set_vehicle_type(R1_vehicleType type) 
+void OMOROBOT_R1::set_vehicle_type(R1_VEHICLE_TYPE type) 
 {
+  _vehicle_type = type;
   _canBus.set_vehicle_type(type);
-  //_controlMsg.v_type = type;
-  //controlMessageInit(&_controlMsg);
 }
 
 /**
@@ -158,8 +155,6 @@ void OMOROBOT_R1::begin() {
   if(!_can_rx_extern) {
     _canBus.begin_bus();
   }
-  //can_TxMsg_init(&_canTxMsg_Motor, 0x4, 8);
-  //can_TxMsg_init(&_canTxMsg_Odo, 0x4, 8);
   _odoRequest_millis_last = millis();
 }
 
@@ -191,11 +186,20 @@ void OMOROBOT_R1::spin() {
   if(_10ms_loop) {
     if(millis()-_10ms_loop_millis_last > 9) {
       _10ms_loop();
-      control_motor_VW(_goal_V, _goal_W);
+      if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
+        if(_goal_V == 0) _goal_W = 0;
+        // Send PL153 driver dac and angle data
+        //Serial.print("dac:");Serial.print(_goal_V);
+        Serial.print("angle:");Serial.print(_goal_W);
+        Serial.println("");
+        _canBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);
+      } else {
+        // For R1 send V and W
+        _canBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
+      }
       _10ms_loop_millis_last = millis();
     }
   }
-
   if(millis() - _100ms_loop_millis_last > 99) {
 #ifdef SAME_TAG_REFRESH_EN
     if(_same_tag_reset_timer>0) {
@@ -227,6 +231,8 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
     _line_pos = (int8_t)can_rx.data[1];
     _lineDetect_millis_last = millis();    //Update line detection time
     _lineOut_timer = 0;
+    //Serial.print("Line:");
+    //Serial.println(_line_pos);
     //Check if tag data is new one
     for(i =0; i<4; i++) {
       if(_tag_data_prev[i]!=can_rx.data[4+i]) {
@@ -337,24 +343,16 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
 
 void OMOROBOT_R1::control_motor_VW(int V, int W)
 {
-    _canTxMsg_Motor.data[0] = CAN_MOTOR_CMD_VW;
     V = V*_v_dir;
     W = W*_w_dir;
-    _canTxMsg_Motor.data[1] = V&0xFF;
-    _canTxMsg_Motor.data[2] = (V>>8)&0xFF;
-    _canTxMsg_Motor.data[3] = W&0xFF;
-    _canTxMsg_Motor.data[4] = (W>>8)&0xFF;
-    Serial.print("VW:");
-    Serial.print(V);Serial.print(",");
-    Serial.print(W);Serial.print(",");
-    Serial.print(_line_pos);Serial.println("");
     _canBus.cmd_VW(V, W);
-    //_mcp2515->sendMessage(&_canTxMsg_Motor);
 }
+
 void OMOROBOT_R1::request_odo()
 {
   _canBus.request_odo(_odo_reset);
 }
+
 void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
 {
   _drive_mode = mode;
@@ -389,9 +387,13 @@ void OMOROBOT_R1::set_lineoutTime(int ms)
   _lineOut_timeOut_ms = ms;
 }
 
-void OMOROBOT_R1::set_pl_lift_mode(PL153_LiftModeType mode)
+void OMOROBOT_R1::set_pl_lift_mode(PL_LIFT_MODE_TYPE mode)
 {
   _canBus.set_pl_lift_mode(mode);
+}
+void OMOROBOT_R1::set_v_accel(uint16_t accel)
+{
+  _v_accel = accel;
 }
 /// Start vehicle with target speed
 void OMOROBOT_R1::go(int target_speed)
