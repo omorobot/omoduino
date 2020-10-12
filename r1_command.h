@@ -13,6 +13,7 @@
 #define _R1_COMMAND_H_
 
 #include <inttypes.h>
+#include <mcp2515.h>
 
 #define CAN_MOTOR_CMD_VW_PL     0x71
 #define CAN_MOTOR_CMD_DAC_ANGLE 0x72
@@ -40,6 +41,7 @@ enum PL153_LiftModeType {
     PL153_lift_up   = 1,
     PL153_lift_down = 2
 };
+
 typedef struct {
     int16_t V;
     int16_t W;
@@ -60,28 +62,53 @@ typedef struct {
     int16_t angle;
 }CmdPL153_V_angle_type;
 
-class MCP2515;
+enum R1_MessageType{
+    R1MSG_ODO,
+    R1MSG_LINEPOS,
+    R1MSG_LINEOUT
+};
 
-class R1_Command {
+class MCP2515;
+class OMOROBOT_R1;
+
+class R1_CanBus {
 public:
-    R1_Command();
+    typedef void (OMOROBOT_R1::*R1_NewCanRxEvent)(struct can_frame canRxMsg);
+    R1_CanBus(void);
+    R1_CanBus(uint16_t cspin);
+    R1_CanBus(MCP2515* mcp2515);
+    void begin_bus(void);
+    void scan(void);
+    void onNewCanRx(OMOROBOT_R1* obj, R1_NewCanRxEvent cbEvent);
     void set_vehicle_type(R1_vehicleType type);
     void set_control_mode(R1_controlModeType mode);
     void cmd_VW(int16_t v_mm_s, int16_t w_mrad_s);
     void cmd_diffv(int16_t v_l_mm_s, int16_t v_r_mm_s);
-    void odo_request();
-    void odo_reset();
+    void request_odo(bool reset);
+    void set_pl_lift_mode(PL153_LiftModeType mode);
+
 private:
+    MCP2515 *_mcp2515;
+    R1_NewCanRxEvent        _cbCanRxEvent;
+    OMOROBOT_R1*            _cbObj;
     R1_vehicleType          v_type;      //Vehicle type
-    struct can_frame        canCmdMsg;
-    struct can_frame        canOdoMsg;
+    typedef struct CanCommandType{
+        uint8_t cmd_byte;
+        uint16_t cmd1;
+        uint16_t cmd2;
+        uint8_t aux_byte;
+    }CanCommandType;
+    
+    
+    struct can_frame        _canRxMsg;
     R1_controlModeType      mode;
-    CmdVW_type              cmdVW;
-    CmdDiffv_type           cmdDiffv;
-    CmdPL153_V_angle_type   cmdPL153;
-    CmdRPM_type             cmdRPM;
-    uint8_t                 aux_byte;
-    int can_frame_init(can_frame* frame, int id, int dlc);
+
+    CanCommandType          _canCmd;
+    struct can_frame        _can_tx_odo;
+    struct can_frame        _can_tx_cmd;
+    bool _can_extern;
+    void sendCommand(CanCommandType cmd);
+    int can_TxMsg_init(can_frame* frame, int id, int dlc);
 };
 
 #endif

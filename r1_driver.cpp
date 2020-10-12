@@ -40,6 +40,7 @@ int       _odo_r;
 void speed_control(void);
 void line_control(void);
 void turn_process(void);
+//void newCanRxEvent(struct can_frame _canRxMsg);
 
 void speed_control(void)
 {
@@ -120,62 +121,45 @@ void turn_process(void)
 *   @brief Initialize MCP2515 with default CS pin for Arduino Uno
 */
 OMOROBOT_R1::OMOROBOT_R1() {
-  _mcp2515 = new MCP2515(10);
+  //_mcp2515 = new MCP2515(10);
+  _canBus = R1_CanBus();
+  _canBus.onNewCanRx(this, &this->newCanRxEvent);
   _drive_mode = R1DRV_DefaultMode;
 }
 /**
 *   @brief Initialize MCP2515 with different CS pin for Arduino Mega 2560 board
 */
 OMOROBOT_R1::OMOROBOT_R1(uint16_t cspin) {
-  _mcp2515 = new MCP2515(cspin);
+  _canBus = R1_CanBus(cspin);
+  _canBus.onNewCanRx(this, &this->newCanRxEvent);
   _drive_mode = R1DRV_DefaultMode;
 }
 /**
 * @brief Initialize with MCP2515 object as external reference
 */
 OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
-  _mcp2515 = mcp2515;
+  _canBus = R1_CanBus(mcp2515);
   _drive_mode = R1DRV_DefaultMode;
-  _can_rx_extern = true;
+  _can_rx_extern = true;    //CanRx is scanned in external reference so no need to scan in the loop
 }
 
 void OMOROBOT_R1::set_vehicle_type(R1_vehicleType type) 
 {
-  _controlMsg.v_type = type;
-  controlMessageInit(&_controlMsg);
+  _canBus.set_vehicle_type(type);
+  //_controlMsg.v_type = type;
+  //controlMessageInit(&_controlMsg);
 }
 
-void OMOROBOT_R1::controlMessageInit(ControlMessageType *msg)
-{
-  switch(msg->v_type) {
-    case R1_vtype_default:
-    msg->cmd_vw     =     CAN_MOTOR_CMD_VW;
-    msg->cmd_diffv  =
-    break;
-    case R1_vtype_PL153:
-    msg->cmd_vw =         CAN_MOTOR_CMD_VW_PL;
-    msg->cmd_dac_angle =  CAN_MOTOR_CMD_DAC_ANGLE;
-    break;
-  }
-  can_TxMsg_init(&msg->canTxMsg, 0x4, 8);
-}
-void OMOROBOT_R1::sendControlMessage(ControlMessageType* msg)
-{
-
-}
 /**
 * @brief Begin initialize items
 */
 void OMOROBOT_R1::begin() {
   
   if(!_can_rx_extern) {
-    SPI.begin();
-    _mcp2515->reset();
-    _mcp2515->setBitrate(CAN_500KBPS);
-    _mcp2515->setNormalMode();
+    _canBus.begin_bus();
   }
-  can_TxMsg_init(&_canTxMsg_Motor, 0x4, 8);
-  can_TxMsg_init(&_canTxMsg_Odo, 0x4, 8);
+  //can_TxMsg_init(&_canTxMsg_Motor, 0x4, 8);
+  //can_TxMsg_init(&_canTxMsg_Odo, 0x4, 8);
   _odoRequest_millis_last = millis();
 }
 
@@ -192,67 +176,7 @@ void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent)
 */
 void OMOROBOT_R1::spin() {
   if(!_can_rx_extern) {
-    if (_mcp2515->readMessage(&_canRxMsg) == MCP2515::ERROR_OK) {
-      
-      int senderID = (_canRxMsg.can_id>>4);
-      int dlc = _canRxMsg.can_dlc;
-  #ifdef DEBUG_DRIVER      
-      Serial.print(_canRxMsg.can_id, HEX); // print ID
-      Serial.print(" "); 
-      Serial.print(_canRxMsg.can_dlc, HEX); // print DLC
-      Serial.println();
-      
-      for (int i = 0; i<_canRxMsg.can_dlc; i++)  {  // print the data
-        Serial.print(_canRxMsg.data[i],HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-  #endif
-      if(senderID == 0x02) { //From LINE sensor
-        switch(_canRxMsg.data[0]) {
-          case 1:   //Line detect
-            _isLineOut = false;
-            _line_pos = (int8_t)_canRxMsg.data[1];
-            //Serial.print(_line_pos);
-            //Serial.println();
-            _lineDetect_millis_last = millis();    //Update line detection time
-            _lineOut_timer = 0;
-  #ifdef DEBUG_DRIVER
-            Serial.print("LINE POS: ");
-            Serial.print(_line_pos);
-            Serial.println();
-  #endif
-            _cbDataEvent(R1MSG_LINEPOS);
-            break;
-          case 2:   //No line
-            _isLineOut = true;
-            _lineOut_timer = millis() - _lineDetect_millis_last;
-            if(_lineOut_timeOut_ms > 0) {
-              if(_lineOut_timer > _lineOut_timeOut_ms) {
-                _go_flag = false;     //Stop the line tracer
-              }
-            }
-            
-            _cbDataEvent(R1MSG_LINEOUT);
-            break;
-        }
-      } else if(senderID == 0x4) {
-        if(_canRxMsg.data[0] == 0x02) {
-          _odo_r = (_canRxMsg.data[1]|(_canRxMsg.data[2]<<8));
-          _odo_l = (_canRxMsg.data[3]|(_canRxMsg.data[4]<<8));
-          _cbDataEvent(R1MSG_ODO);
-        }
-  #ifdef DEBUG_DRIVER
-        Serial.print("ODO: L= ");
-        Serial.print(_odo_l);
-        Serial.print(" R= ");
-        Serial.print(_odo_r);
-        Serial.println();
-  #endif
-      } else if(senderID == 0x06) {   //From conveyor
-        
-      }
-    }
+    _canBus.scan();
   }
   if(_3ms_loop) {
     if(millis() - _3ms_loop_millis_last > 2) {
@@ -261,7 +185,7 @@ void OMOROBOT_R1::spin() {
     }
   }
   if(millis()-_odoRequest_millis_last > 9) {
-      request_odo();
+      _canBus.request_odo(_odo_reset);
       _odoRequest_millis_last = millis();
   }
   if(_10ms_loop) {
@@ -348,6 +272,69 @@ void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
     _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
     _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
 }
+
+void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
+{
+  int senderID = (_canRxMsg.can_id>>4);
+  int dlc = _canRxMsg.can_dlc;
+#ifdef DEBUG_DRIVER      
+  Serial.print(_canRxMsg.can_id, HEX); // print ID
+  Serial.print(" "); 
+  Serial.print(_canRxMsg.can_dlc, HEX); // print DLC
+  Serial.println();
+  
+  for (int i = 0; i<_canRxMsg.can_dlc; i++)  {  // print the data
+    Serial.print(_canRxMsg.data[i],HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+#endif
+  if(senderID == 0x02) { //From LINE sensor
+    switch(_canRxMsg.data[0]) {
+      case 1:   //Line detect
+        _isLineOut = false;
+        _line_pos = (int8_t)_canRxMsg.data[1];
+        //Serial.print(_line_pos);
+        //Serial.println();
+        _lineDetect_millis_last = millis();    //Update line detection time
+        _lineOut_timer = 0;
+#ifdef DEBUG_DRIVER
+        Serial.print("LINE POS: ");
+        Serial.print(_line_pos);
+        Serial.println();
+#endif
+        _cbDataEvent(R1MSG_LINEPOS);
+        break;
+      case 2:   //No line
+        _isLineOut = true;
+        _lineOut_timer = millis() - _lineDetect_millis_last;
+        if(_lineOut_timeOut_ms > 0) {
+          if(_lineOut_timer > _lineOut_timeOut_ms) {
+            _go_flag = false;     //Stop the line tracer
+          }
+        }
+        
+        _cbDataEvent(R1MSG_LINEOUT);
+        break;
+    }
+  } else if(senderID == 0x4) {
+    if(_canRxMsg.data[0] == 0x02) {
+      _odo_r = (_canRxMsg.data[1]|(_canRxMsg.data[2]<<8));
+      _odo_l = (_canRxMsg.data[3]|(_canRxMsg.data[4]<<8));
+      _cbDataEvent(R1MSG_ODO);
+    }
+#ifdef DEBUG_DRIVER
+    Serial.print("ODO: L= ");
+    Serial.print(_odo_l);
+    Serial.print(" R= ");
+    Serial.print(_odo_r);
+    Serial.println();
+#endif
+  } else if(senderID == 0x06) {   //From conveyor
+    
+  }
+}
+
 void OMOROBOT_R1::control_motor_VW(int V, int W)
 {
     _canTxMsg_Motor.data[0] = CAN_MOTOR_CMD_VW;
@@ -361,24 +348,12 @@ void OMOROBOT_R1::control_motor_VW(int V, int W)
     Serial.print(V);Serial.print(",");
     Serial.print(W);Serial.print(",");
     Serial.print(_line_pos);Serial.println("");
-    _mcp2515->sendMessage(&_canTxMsg_Motor);
+    _canBus.cmd_VW(V, W);
+    //_mcp2515->sendMessage(&_canTxMsg_Motor);
 }
 void OMOROBOT_R1::request_odo()
 {
-  if(_odo_reset) {
-    _canTxMsg_Odo.data[0] = CAN_MOTOR_ODO_RESET;
-  }else {
-    _canTxMsg_Odo.data[0] = CAN_MOTOR_ODO_REQUEST;
-  }
-  _canTxMsg_Odo.data[1] = 0;
-  _canTxMsg_Odo.data[2] = 0;
-  int ret = _mcp2515->sendMessage(&_canTxMsg_Odo);
-  if(ret > 0) {
-#ifdef DEBUG_DRIVER    
-    Serial.print("TX Failed");
-    Serial.println(ret);
-#endif
-  }
+  _canBus.request_odo(_odo_reset);
 }
 void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
 {
@@ -416,17 +391,7 @@ void OMOROBOT_R1::set_lineoutTime(int ms)
 
 void OMOROBOT_R1::set_pl_lift_mode(PL153_LiftModeType mode)
 {
-  switch(mode){
-    case PL153_lift_stop:
-      _controlMsg.aux_byte = 0;
-      break;
-    case PL153_lift_up:
-      _controlMsg.aux_byte = 1;
-      break;
-    case PL153_lift_down:
-      _controlMsg.aux_byte = 2;
-      break;
-  }
+  _canBus.set_pl_lift_mode(mode);
 }
 /// Start vehicle with target speed
 void OMOROBOT_R1::go(int target_speed)
@@ -492,22 +457,22 @@ void OMOROBOT_R1::start_turn(Turn_DirectionType dir, int turn_odo_cnt)
   _turn_odo_cnt = turn_odo_cnt;
 }
 
-int OMOROBOT_R1::can_TxMsg_init(can_frame* frame, int id, int dlc)
-{
-    if(id>255) return 1;
-    if(dlc>8 || dlc<1) return 2;
-    frame->can_id = (1<<4)|id;
-    frame->can_dlc = dlc;
-    for(int i = 0; i<dlc; i++) {
-        frame->data[i] = 0;
-    }
-//#ifdef DEBUG_DRIVER    
-    Serial.print("Init: ID= 0x");
-    Serial.print(frame->can_id, HEX);
-    Serial.print(" DLC= ");
-    Serial.print(frame->can_dlc);
-    Serial.println();
-//#endif    
-    return 0;
-}
+// int OMOROBOT_R1::can_TxMsg_init(can_frame* frame, int id, int dlc)
+// {
+//     if(id>255) return 1;
+//     if(dlc>8 || dlc<1) return 2;
+//     frame->can_id = (1<<4)|id;
+//     frame->can_dlc = dlc;
+//     for(int i = 0; i<dlc; i++) {
+//         frame->data[i] = 0;
+//     }
+// //#ifdef DEBUG_DRIVER    
+//     Serial.print("Init: ID= 0x");
+//     Serial.print(frame->can_id, HEX);
+//     Serial.print(" DLC= ");
+//     Serial.print(frame->can_dlc);
+//     Serial.println();
+// //#endif    
+//     return 0;
+// }
 

@@ -21,12 +21,8 @@
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
 class MCP2515;
+//class R1_CanBus;
 
-enum R1_MessageType{
-    R1MSG_ODO,
-    R1MSG_LINEPOS,
-    R1MSG_LINEOUT
-};
 
 enum R1_DriveMode{
     R1DRV_DefaultMode,
@@ -102,24 +98,24 @@ public:
     void    set_pl_lift_mode(PL153_LiftModeType mode);
 private:
     
-    typedef struct {
-        R1_vehicleType v_type;      //Vehicle type
-        struct can_frame canTxMsg;
-        R1_controlModeType mode;
-        uint8_t cmd_vw;
-        uint8_t cmd_dac_angle;
-        uint8_t cmd_diffv;
-        uint8_t cmd_rpm;
-        int16_t v_cmd;
-        int16_t w_cmd;
-        int16_t rpm_l;
-        int16_t rpm_r;
-        int16_t dac_val;
-        int16_t angle;
-        uint8_t aux_byte;
-    }ControlMessageType;
+    // typedef struct {
+    //     R1_vehicleType v_type;      //Vehicle type
+    //     struct can_frame canTxMsg;
+    //     R1_controlModeType mode;
+    //     uint8_t cmd_vw;
+    //     uint8_t cmd_dac_angle;
+    //     uint8_t cmd_diffv;
+    //     uint8_t cmd_rpm;
+    //     int16_t v_cmd;
+    //     int16_t w_cmd;
+    //     int16_t rpm_l;
+    //     int16_t rpm_r;
+    //     int16_t dac_val;
+    //     int16_t angle;
+    //     uint8_t aux_byte;
+    // }ControlMessageType;
 
-    MCP2515 *_mcp2515;
+    //MCP2515 *_mcp2515;
     R1_NewDataClientEvent   _cbDataEvent;
     R1_NewTagReadEvent      _cbTagEvent;
     R1_DriveMode            _drive_mode;
@@ -127,7 +123,7 @@ private:
     loop_event              _3ms_loop;
     loop_event              _10ms_loop;
     //bool                    _odo_reset = false;
-
+    R1_CanBus               _canBus;
     uint64_t                _odoRequest_millis_last;
     uint64_t                _lineDetect_millis_last;            //Last time line detected millis
     bool                    _isLineOut = false;
@@ -139,10 +135,10 @@ private:
     uint8_t                 _tag_data_prev[4];
     uint16_t                _same_tag_reset_timer;
     Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
-    ControlMessageType      _controlMsg;
-
-    void controlMessageInit(ControlMessageType* msg);
-    void sendControlMessage(ControlMessageType* msg);
+    //ControlMessageType      _controlMsg;
+    void newCanRxEvent(can_frame can_rx);
+    //void controlMessageInit(ControlMessageType* msg);
+    //void sendControlMessage(ControlMessageType* msg);
 };
 
 #endif
