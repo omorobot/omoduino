@@ -138,6 +138,31 @@ OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
   _drive_mode = R1DRV_DefaultMode;
   _can_rx_extern = true;
 }
+
+void OMOROBOT_R1::set_vehicle_type(R1_vehicleType type) 
+{
+  _controlMsg.v_type = type;
+  controlMessageInit(&_controlMsg);
+}
+
+void OMOROBOT_R1::controlMessageInit(ControlMessageType *msg)
+{
+  switch(msg->v_type) {
+    case R1_vtype_default:
+    msg->cmd_vw     =     CAN_MOTOR_CMD_VW;
+    msg->cmd_diffv  =
+    break;
+    case R1_vtype_PL153:
+    msg->cmd_vw =         CAN_MOTOR_CMD_VW_PL;
+    msg->cmd_dac_angle =  CAN_MOTOR_CMD_DAC_ANGLE;
+    break;
+  }
+  can_TxMsg_init(&msg->canTxMsg, 0x4, 8);
+}
+void OMOROBOT_R1::sendControlMessage(ControlMessageType* msg)
+{
+
+}
 /**
 * @brief Begin initialize items
 */
@@ -332,6 +357,10 @@ void OMOROBOT_R1::control_motor_VW(int V, int W)
     _canTxMsg_Motor.data[2] = (V>>8)&0xFF;
     _canTxMsg_Motor.data[3] = W&0xFF;
     _canTxMsg_Motor.data[4] = (W>>8)&0xFF;
+    Serial.print("VW:");
+    Serial.print(V);Serial.print(",");
+    Serial.print(W);Serial.print(",");
+    Serial.print(_line_pos);Serial.println("");
     _mcp2515->sendMessage(&_canTxMsg_Motor);
 }
 void OMOROBOT_R1::request_odo()
@@ -379,9 +408,25 @@ void OMOROBOT_R1::set_drive_direction(Drive_DirectionType dir, Line_AlignmentTyp
     _w_dir = -1;
   }
 }
+
 void OMOROBOT_R1::set_lineoutTime(int ms)
 {
   _lineOut_timeOut_ms = ms;
+}
+
+void OMOROBOT_R1::set_pl_lift_mode(PL153_LiftModeType mode)
+{
+  switch(mode){
+    case PL153_lift_stop:
+      _controlMsg.aux_byte = 0;
+      break;
+    case PL153_lift_up:
+      _controlMsg.aux_byte = 1;
+      break;
+    case PL153_lift_down:
+      _controlMsg.aux_byte = 2;
+      break;
+  }
 }
 /// Start vehicle with target speed
 void OMOROBOT_R1::go(int target_speed)

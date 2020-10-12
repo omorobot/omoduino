@@ -13,10 +13,9 @@
 #define _R1_DRIVER_H_
 
 #include <inttypes.h>
+#include "r1_command.h"
 
-#define CAN_MOTOR_CMD_VW        0x81
-#define CAN_MOTOR_ODO_REQUEST   0x82
-#define CAN_MOTOR_ODO_RESET     0x83
+
 #define DEFAULT_TURN_W          100
 
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
@@ -52,6 +51,7 @@ enum TAG_Type{
     TAG_POU     = 0xA2,     //162
     TAG_APPROACH= 0xAA,     //170
     TAG_TURN    = 0xB0,     //176
+    TAG_LIFT    = 0xB1,     //177
     TAG_CIN     = 0xC1,     //193
     TAG_COUT    = 0xC0,      //192
     TAG_SPEED   = 0xE0,     //224
@@ -82,6 +82,7 @@ public:
     void    control_motor_VW(int V, int W);
     void    request_odo();
     void    set_driveMode(R1_DriveMode mode);
+    void    set_vehicle_type(R1_vehicleType type);
     void    set_lineoutTime(int ms);
     void    new_can_line(struct can_frame can_rx);
     void    new_can_odo(struct can_frame can_rx);
@@ -98,12 +99,31 @@ public:
     void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
     void    start_turn(Turn_DirectionType dir, int turn_odo_cnt);
     void    set_turn_speed(uint16_t turn_W);
+    void    set_pl_lift_mode(PL153_LiftModeType mode);
 private:
     
+    typedef struct {
+        R1_vehicleType v_type;      //Vehicle type
+        struct can_frame canTxMsg;
+        R1_controlModeType mode;
+        uint8_t cmd_vw;
+        uint8_t cmd_dac_angle;
+        uint8_t cmd_diffv;
+        uint8_t cmd_rpm;
+        int16_t v_cmd;
+        int16_t w_cmd;
+        int16_t rpm_l;
+        int16_t rpm_r;
+        int16_t dac_val;
+        int16_t angle;
+        uint8_t aux_byte;
+    }ControlMessageType;
+
     MCP2515 *_mcp2515;
     R1_NewDataClientEvent   _cbDataEvent;
     R1_NewTagReadEvent      _cbTagEvent;
     R1_DriveMode            _drive_mode;
+    R1_vehicleType          _vType;
     loop_event              _3ms_loop;
     loop_event              _10ms_loop;
     //bool                    _odo_reset = false;
@@ -119,6 +139,10 @@ private:
     uint8_t                 _tag_data_prev[4];
     uint16_t                _same_tag_reset_timer;
     Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
+    ControlMessageType      _controlMsg;
+
+    void controlMessageInit(ControlMessageType* msg);
+    void sendControlMessage(ControlMessageType* msg);
 };
 
 #endif
