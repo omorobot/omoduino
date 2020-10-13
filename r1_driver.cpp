@@ -7,15 +7,15 @@ struct can_frame _canRxMsg;
 
 //#define DEBUG_CONTROL     // Un-comment to debug control output
 
-double    _pid_line_p = 10.0;
+double    _pid_line_p = 9.0;
 double    _pid_line_i = 0.1;
 double    _pid_line_d = 0.0;
 
 int8_t    _line_pos = 0;
-int       _line_error_accum = 0;
-int       _line_error_prev = 0;
-const int _line_error_accum_max = 250;
-const int _line_control_out_max = 300;
+double    _d_line_error_accum = 0;
+double    _d_line_error_prev = 0.0;
+const double _d_line_error_accum_max = 250.0;
+const double _d_line_control_out_max = 300.0;
 
 int       _lineOut_timer;
 int       _lineOut_timeOut_ms;
@@ -32,9 +32,12 @@ uint8_t   _turn_state = 0;
 uint8_t   _turn_cmd;
 uint16_t  _turn_odo_cnt;
 uint16_t  _turn_W = DEFAULT_TURN_W; //Turn speed when start to turn;
+uint16_t  _turn_V = 500;
 bool      _odo_reset;
 int       _odo_l;
 int       _odo_r;
+//double    _d_error_prev;
+double    _d_alpha = 0.8;
 
 void speed_control(void);
 void line_control(void);
@@ -63,16 +66,23 @@ void line_control(void)
 {
   _goal_V = _cmd_speed;
   if(_go_flag) {
-    int error = _line_pos;
-    _line_error_accum += error;
-    int error_d = error - _line_error_prev;
-    _line_error_prev = error;
-    if(_line_error_accum > _line_error_accum_max) _line_error_accum = _line_error_accum_max;
-    else if(_line_error_accum < -_line_error_accum_max) _line_error_accum = -_line_error_accum_max;
-    int output = _pid_line_p * error + _line_error_accum*_pid_line_i + error_d * _pid_line_d;
-    if(output > _line_control_out_max) output = _line_control_out_max;
-    else if(output < -_line_control_out_max) output = -_line_control_out_max;
-    _goal_W = output;
+    double error = (double)_line_pos*_d_alpha + (1.0-_d_alpha)*_d_line_error_prev;
+    _d_line_error_accum += error;
+    double error_d = error - _d_line_error_prev;
+    _d_line_error_prev = error;
+  
+    //if(error > 8.0) _goal_W = 170;
+    //else if(error < -8.0) _goal_W = -170;
+    //else {
+      
+      if(_d_line_error_accum > _d_line_error_accum_max) _d_line_error_accum = _d_line_error_accum_max;
+      else if(_d_line_error_accum < -_d_line_error_accum_max) _d_line_error_accum = -_d_line_error_accum_max;
+      double output = _pid_line_p * error + _d_line_error_accum*_pid_line_i + error_d * _pid_line_d;
+      if(output > _d_line_control_out_max) output = _d_line_control_out_max;
+      else if(output < -_d_line_control_out_max) output = -_d_line_control_out_max;
+      _goal_W = (int)output;
+    //}
+    
 #ifdef DEBUG_CONTROL   
     Serial.print("LINE: error=");
     Serial.print(error);
@@ -109,6 +119,7 @@ void turn_process(void)
   case 3:               //Now start to turn
     if(_turn_cmd == 0) {    //For right turn
       _goal_W = -_turn_W;
+      _goal_V = _turn_V;
     } else if(_turn_cmd == 1) { //For left turn
       _goal_W = _turn_W;
     }
@@ -300,8 +311,6 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
       case 1:   //Line detect
         _isLineOut = false;
         _line_pos = (int8_t)_canRxMsg.data[1];
-        //Serial.print(_line_pos);
-        //Serial.println();
         _lineDetect_millis_last = millis();    //Update line detection time
         _lineOut_timer = 0;
 #ifdef DEBUG_DRIVER
@@ -358,7 +367,7 @@ void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
   _drive_mode = mode;
   if(_drive_mode == R1DRV_LineTracerMode) {
     Serial.println("Set Line tracer mode");
-    _line_error_accum = 0;
+    _d_line_error_accum = 0.0;
     _goal_V = 0;
     _goal_W = 0;
     _cmd_speed = 0;

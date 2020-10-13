@@ -16,7 +16,7 @@
 #include "r1_command.h"
 
 
-#define DEFAULT_TURN_W          100
+#define DEFAULT_TURN_W          180 //100
 
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
