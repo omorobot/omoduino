@@ -5,8 +5,8 @@ R1_Controller::R1_Controller()
    _pid_l.Kp =             PID_LINE_KP_DEFAULT;
    _pid_l.Ki =             PID_LINE_KI_DEFAULT;
    _pid_l.Kd =             PID_LINE_KD_DEFAULT;
-   _pid_l.error_i_max =    PID_LINE_ERROR_I_MAX;
-   _pid_l.out_max =        PID_LINE_OUT_MAX;
+   _pid_l.error_i_max =    PID_LINE_ERROR_I_MAX_DEFAULT;
+   _pid_l.out_max =        PID_LINE_OUT_MAX_DEFAULT;
    _pid_l.error_i =        0.0;   
    _line_filter_alpha =    PID_LINE_FILTER_ALPHA_DEFAULT;
    _v_accel =              V_CONTROL_ACCEL_DEFAULT;
@@ -21,9 +21,17 @@ void  R1_Controller::set_pid_gain_line(PID_Type pid)
    _pid_l.error_prev = 0.0;
    _pid_l.error_i = 0.0;
 }
+void  R1_Controller::reset_pid_line(void)
+{
+   _pid_l.error_i = 0.0;
+}
 void  R1_Controller::set_target_v(int v)
 {
-    _v_target = v;
+   _v_target = v;
+}
+void  R1_Controller::set_v_accel(int accel)
+{
+   _v_accel = accel;
 }
 int   R1_Controller::speed_control(int cmd_v, bool go_flag)
 {

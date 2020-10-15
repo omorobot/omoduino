@@ -74,35 +74,36 @@ public:
    OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
    OMOROBOT_R1(MCP2515* mcp2515);
 
-   void    begin(void);
-   void    onNewData(R1_NewDataClientEvent cbEvent);
-   void    onNewTag(R1_NewTagReadEvent cbEvent);
-   void    spin(void);
-   void    control_motor_VW(int V, int W);
-   void    request_odo();
-   void    set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode);
+   void     begin(void);
+   void     onNewData(R1_NewDataClientEvent cbEvent);
+   void     onNewTag(R1_NewTagReadEvent cbEvent);
+   void     spin(void);
+   void     control_motor_VW(int V, int W);
+   void     request_odo();
+   void     set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode);
    //void    set_vehicle_type(R1_VEHICLE_TYPE type);
-   void    set_lineoutTime(int ms);
-   void    new_can_line(struct can_frame can_rx);
-   void    new_can_odo(struct can_frame can_rx);
-   void    go(int target_speed);
-   void    go(void);
-   void    stop();
-   void    pause();
-   bool    is_going();
-   int     get_odo_l();
-   int     get_odo_r();
-   int8_t  get_linePos();
-   int     get_lineoutTimer();
+   void     set_lineoutTime(int ms);
+   void     new_can_line(struct can_frame can_rx);
+   void     new_can_odo(struct can_frame can_rx);
+   void     go(int target_speed);
+   void     go(void);
+   void     stop();
+   void     pause();
+   bool     is_going();
+   int      get_odo_l();
+   int      get_odo_r();
+   int8_t   get_linePos();
+   int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
-   void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
-   void    start_turn(Turn_DirectionType dir, int turn_odo_cnt);
-   void    set_turn_speed(uint16_t turn_W);
-   void    set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
-   void    set_v_accel(uint16_t accel);
-   void    set_pid_gains(PID_Type pid);
+   void     set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
+   void     start_turn(Turn_DirectionType dir, int turn_odo_cnt);
+   //void     set_turn_speed(uint16_t turn_W);
+   void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
+   void     set_v_accel(uint16_t accel);
+   void     set_pid_gains(PID_Type pid);
+   void     set_turning_speed(int V, int W);
 private:
-    
+
    R1_NewDataClientEvent   _cbDataEvent;
    R1_NewTagReadEvent      _cbTagEvent;
    R1_DriveMode            _drive_mode;
@@ -116,9 +117,30 @@ private:
    R1_CanBus               _canBus;
    uint64_t                _odoRequest_millis_last;
    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
-   bool                    _isLineOut = false;
+   bool                    _isLineOut;
+   bool                    _go_flag;
+   int                     _cmd_speed;
+   int                     _goal_V;
+   int                     _goal_W;
+   int                     _v_dir;
+   int                     _w_dir;
 
-   uint64_t                _3ms_loop_millis_last;
+   int8_t                  _line_pos;
+   int       _lineOut_timer;
+   int       _lineOut_timeOut_ms;
+   int       _target_speed;          // target speed when go flag is set
+   int       _resume_speed;          // target speed when paused
+
+   uint8_t                 _turn_state;
+   uint8_t                 _turn_cmd;
+   uint16_t                _turn_odo_cnt;
+   uint16_t                _turning_W;
+   uint16_t                _turning_V;
+   bool                    _odo_reset;
+   int                     _odo_l;
+   int                     _odo_r;
+
+   uint64_t                _5ms_loop_millis_last;
    uint64_t                _10ms_loop_millis_last;
    uint64_t                _100ms_loop_millis_last;
    bool                    _can_rx_extern = false;             //Can rx read performed externally
@@ -126,7 +148,10 @@ private:
    uint16_t                _same_tag_reset_timer;
    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
    //ControlMessageType      _controlMsg;
+   struct can_frame _canRxMsg;
+
    void newCanRxEvent(can_frame can_rx);
+   void turn_process(void);
    //void controlMessageInit(ControlMessageType* msg);
    //void sendControlMessage(ControlMessageType* msg);
 };

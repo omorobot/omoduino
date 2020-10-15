@@ -12,38 +12,40 @@
 #ifndef _R1_CONTROLLER_H_
 #define _R1_CONTROLLER_H_
 
-#define PID_LINE_KP_DEFAULT         9.0
-#define PID_LINE_KI_DEFAULT         0.1
-#define PID_LINE_KD_DEFAULT         0.0
-#define PID_LINE_ERROR_I_MAX        250.0
-#define PID_LINE_OUT_MAX            180.0
-#define PID_LINE_FILTER_ALPHA_DEFAULT 0.8
-#define V_CONTROL_ACCEL_DEFAULT         1
+#define PID_LINE_KP_DEFAULT            9.0
+#define PID_LINE_KI_DEFAULT            0.1
+#define PID_LINE_KD_DEFAULT            0.0
+#define PID_LINE_ERROR_I_MAX_DEFAULT   250.0
+#define PID_LINE_OUT_MAX_DEFAULT       180.0
+#define PID_LINE_FILTER_ALPHA_DEFAULT  0.8
+#define V_CONTROL_ACCEL_DEFAULT        1
 
 typedef struct {
-   double Kp;
-   double Ki;
-   double Kd;
-   double error_prev;
-   double error_i;
-   double error_i_max;
-   double out_max;
+   double   Kp;
+   double   Ki;
+   double   Kd;
+   double   error_prev;
+   double   error_i;
+   double   error_i_max;
+   double   out_max;
 }PID_Type;
 
 class R1_Controller {
 public:
    R1_Controller();
-   void    set_target_v(int v);
-   int     speed_control(int cmd_v, bool go_flag);
-   int     line_control_vw(int linePos);
-   int     line_control_angle(int linePos);
-   void    set_pid_gain_line(PID_Type);
+   void     set_target_v(int v);
+   void     set_v_accel(int accel);
+   int      speed_control(int cmd_v, bool go_flag);
+   int      line_control_vw(int linePos);
+   int      line_control_angle(int linePos);
+   void     set_pid_gain_line(PID_Type);
+   void     reset_pid_line(void);
 private:
-   PID_Type _pid_l;
-   int _v_accel;
-   int _v_dir;
-   int _w_dir;
-   int _v_target;
-   double _line_filter_alpha;
+   PID_Type          _pid_l;
+   int               _v_accel;
+   int               _v_dir;
+   int               _w_dir;
+   int               _v_target;
+   double            _line_filter_alpha;
 };
 #endif

@@ -15,16 +15,17 @@
 #include <inttypes.h>
 #include <mcp2515.h>
 
-#define CAN_MOTOR_CMD_VW_PL     0x71
-#define CAN_MOTOR_CMD_DAC_ANGLE 0x72
+#define CAN_MOTOR_CMD_VW_PL      0x71
+#define CAN_MOTOR_CMD_DAC_ANGLE  0x72
+#define CAN_MOTOR_CMD_TURN       0x7A
 
-#define CAN_MOTOR_CMD_VW        0x81
-#define CAN_MOTOR_ODO_REQUEST   0x82
-#define CAN_MOTOR_ODO_RESET     0x83
+#define CAN_MOTOR_CMD_VW         0x81
+#define CAN_MOTOR_ODO_REQUEST    0x82
+#define CAN_MOTOR_ODO_RESET      0x83
 
-#define CAN_MOTOR_CMD_DIFF_V    0x86
-#define CAN_MOTOR_CMD_RPM       0x87
-#define CAN_MOTOR_CMD_PWM       0x88
+#define CAN_MOTOR_CMD_DIFF_V     0x86
+#define CAN_MOTOR_CMD_RPM        0x87
+#define CAN_MOTOR_CMD_PWM        0x88
 
 enum R1_VEHICLE_TYPE {
    R1_VEHICLE_TYPE_R1,
