@@ -130,7 +130,6 @@ void turn_process(void)
 *   @brief Initialize MCP2515 with default CS pin for Arduino Uno
 */
 OMOROBOT_R1::OMOROBOT_R1() {
-  //_mcp2515 = new MCP2515(10);
   _canBus = R1_CanBus();
   _canBus.onNewCanRx(this, &this->newCanRxEvent);
   _drive_mode = R1DRV_DefaultMode;
@@ -152,11 +151,11 @@ OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
   _can_rx_extern = true;    //CanRx is scanned in external reference so no need to scan in the loop
 }
 
-void OMOROBOT_R1::set_vehicle_type(R1_VEHICLE_TYPE type) 
-{
-  _vehicle_type = type;
-  _canBus.set_vehicle_type(type);
-}
+// void OMOROBOT_R1::set_vehicle_type(R1_VEHICLE_TYPE type) 
+// {
+//   _vehicle_type = type;
+//   _canBus.set_vehicle_type(type);
+// }
 
 /**
 * @brief Begin initialize items
@@ -184,32 +183,40 @@ void OMOROBOT_R1::spin() {
   if(!_can_rx_extern) {
     _canBus.scan();
   }
-  if(_3ms_loop) {
-    if(millis() - _3ms_loop_millis_last > 2) {
-      _3ms_loop();
-      _3ms_loop_millis_last = millis();
+
+  if(millis() - _3ms_loop_millis_last > 4) {
+    // if(_3ms_loop) {
+    //   _3ms_loop();
+    // }
+    if(_5ms_speed_control) {
+      _cmd_speed = (_controller.*_5ms_speed_control)(_cmd_speed, _go_flag);
+      _goal_V = _cmd_speed;
     }
+    _3ms_loop_millis_last = millis();
   }
   if(millis()-_odoRequest_millis_last > 9) {
       _canBus.request_odo(_odo_reset);
       _odoRequest_millis_last = millis();
   }
-  if(_10ms_loop) {
-    if(millis()-_10ms_loop_millis_last > 9) {
-      _10ms_loop();
-      if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
-        if(_goal_V == 0) _goal_W = 0;
-        // Send PL153 driver dac and angle data
-        //Serial.print("dac:");Serial.print(_goal_V);
-        Serial.print("angle:");Serial.print(_goal_W);
-        Serial.println("");
-        _canBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);
-      } else {
-        // For R1 send V and W
-        _canBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
-      }
-      _10ms_loop_millis_last = millis();
+  if(millis()-_10ms_loop_millis_last > 9) {
+    // if(_10ms_loop) {
+    //   _10ms_loop();
+    // }
+    if(_10ms_line_control) {
+      _goal_W = (_controller.*_10ms_line_control)(_line_pos);
     }
+    if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
+      if(_goal_V == 0) _goal_W = 0;
+      // Send PL153 driver dac and angle data
+      //Serial.print("dac:");Serial.print(_goal_V);
+      //Serial.print("angle:");Serial.print(_goal_W);
+      //Serial.println("");
+      _canBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);
+    } else {
+      // For R1 send V and W
+      _canBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
+    }
+    _10ms_loop_millis_last = millis();
   }
   if(millis() - _100ms_loop_millis_last > 99) {
 #ifdef SAME_TAG_REFRESH_EN
@@ -362,8 +369,10 @@ void OMOROBOT_R1::request_odo()
   _canBus.request_odo(_odo_reset);
 }
 
-void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
+void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode)
 {
+  _vehicle_type = type;
+  _canBus.set_vehicle_type(type);
   _drive_mode = mode;
   if(_drive_mode == R1DRV_LineTracerMode) {
     Serial.println("Set Line tracer mode");
@@ -371,8 +380,16 @@ void OMOROBOT_R1::set_driveMode(R1_DriveMode mode)
     _goal_V = 0;
     _goal_W = 0;
     _cmd_speed = 0;
-    _3ms_loop = &speed_control;
-    _10ms_loop = &line_control;
+    if(_vehicle_type == R1_VEHICLE_TYPE_R1) {
+      // _3ms_loop = &speed_control;
+      // _10ms_loop = &line_control;
+      this->_5ms_speed_control = &_controller.speed_control;
+      this->_10ms_line_control = &_controller.line_control_vw;
+    } else if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
+      this->_5ms_speed_control = &_controller.speed_control;
+      this->_10ms_line_control = &_controller.line_control_angle;
+    }
+    
     _3ms_loop_millis_last = millis();
     _10ms_loop_millis_last = millis();
   }
@@ -403,6 +420,10 @@ void OMOROBOT_R1::set_pl_lift_mode(PL_LIFT_MODE_TYPE mode)
 void OMOROBOT_R1::set_v_accel(uint16_t accel)
 {
   _v_accel = accel;
+}
+void OMOROBOT_R1::set_pid_gains(PID_Type pid)
+{
+  _controller.set_pid_gain_line(pid);
 }
 /// Start vehicle with target speed
 void OMOROBOT_R1::go(int target_speed)

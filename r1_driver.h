@@ -14,6 +14,7 @@
 
 #include <inttypes.h>
 #include "r1_command.h"
+#include "r1_controller.h"
 
 
 #define DEFAULT_TURN_W          180 //100
@@ -63,6 +64,8 @@ typedef struct {
 class OMOROBOT_R1
 {
     typedef void (*loop_event)(void);
+    typedef int (R1_Controller::*m_line_control_event)(int);
+    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
     
     typedef void (*R1_NewDataClientEvent)(R1_MessageType);
@@ -77,8 +80,8 @@ public:
     void    spin(void);
     void    control_motor_VW(int V, int W);
     void    request_odo();
-    void    set_driveMode(R1_DriveMode mode);
-    void    set_vehicle_type(R1_VEHICLE_TYPE type);
+    void    set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode);
+    //void    set_vehicle_type(R1_VEHICLE_TYPE type);
     void    set_lineoutTime(int ms);
     void    new_can_line(struct can_frame can_rx);
     void    new_can_odo(struct can_frame can_rx);
@@ -97,14 +100,18 @@ public:
     void    set_turn_speed(uint16_t turn_W);
     void    set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
     void    set_v_accel(uint16_t accel);
+    void    set_pid_gains(PID_Type pid);
 private:
-
+    
     R1_NewDataClientEvent   _cbDataEvent;
     R1_NewTagReadEvent      _cbTagEvent;
     R1_DriveMode            _drive_mode;
-    R1_VEHICLE_TYPE          _vehicle_type;
+    R1_VEHICLE_TYPE         _vehicle_type;
+    R1_Controller           _controller;
     loop_event              _3ms_loop;
     loop_event              _10ms_loop;
+    m_speed_control_event   _5ms_speed_control;
+    m_line_control_event    _10ms_line_control;
     //bool                    _odo_reset = false;
     R1_CanBus               _canBus;
     uint64_t                _odoRequest_millis_last;
