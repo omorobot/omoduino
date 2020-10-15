@@ -21,29 +21,29 @@
 #define V_CONTROL_ACCEL_DEFAULT         1
 
 typedef struct {
-    double Kp;
-    double Ki;
-    double Kd;
-    double error_prev;
-    double error_i;
-    double error_i_max;
-    double out_max;
+   double Kp;
+   double Ki;
+   double Kd;
+   double error_prev;
+   double error_i;
+   double error_i_max;
+   double out_max;
 }PID_Type;
 
 class R1_Controller {
 public:
-    R1_Controller();
-    void    set_target_v(int v);
-    int     speed_control(int cmd_v, bool go_flag);
-    int     line_control_vw(int linePos);
-    int     line_control_angle(int linePos);
-    void    set_pid_gain_line(PID_Type);
+   R1_Controller();
+   void    set_target_v(int v);
+   int     speed_control(int cmd_v, bool go_flag);
+   int     line_control_vw(int linePos);
+   int     line_control_angle(int linePos);
+   void    set_pid_gain_line(PID_Type);
 private:
-    PID_Type _pid_l;
-    int _v_accel;
-    int _v_dir;
-    int _w_dir;
-    int _v_target;
-    double _line_filter_alpha;
+   PID_Type _pid_l;
+   int _v_accel;
+   int _v_dir;
+   int _w_dir;
+   int _v_target;
+   double _line_filter_alpha;
 };
 #endif

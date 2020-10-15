@@ -27,25 +27,25 @@
 #define CAN_MOTOR_CMD_PWM       0x88
 
 enum R1_VEHICLE_TYPE {
-    R1_VEHICLE_TYPE_R1,
-    R1_VEHICLE_TYPE_PL153
+   R1_VEHICLE_TYPE_R1,
+   R1_VEHICLE_TYPE_PL153
 };
 enum R1_CONTROL_MODE_TYPE{
-    CONTROL_MODE_VW,
-    CONTROL_MODE_DIFFV,
-    CONTROL_MODE_RPM,
-    CONTROL_MODE_DAC_ANGLE
+   CONTROL_MODE_VW,
+   CONTROL_MODE_DIFFV,
+   CONTROL_MODE_RPM,
+   CONTROL_MODE_DAC_ANGLE
 };
 enum PL_LIFT_MODE_TYPE {
-    PL_LIFT_STOP = 0,
-    PL_LIFT_UP   = 1,
-    PL_LIFT_DOWN = 2
+   PL_LIFT_STOP = 0,
+   PL_LIFT_UP   = 1,
+   PL_LIFT_DOWN = 2
 };
 
 enum R1_MessageType{
-    R1MSG_ODO,
-    R1MSG_LINEPOS,
-    R1MSG_LINEOUT
+   R1MSG_ODO,
+   R1MSG_LINEPOS,
+   R1MSG_LINEOUT
 };
 
 class MCP2515;
@@ -53,42 +53,42 @@ class OMOROBOT_R1;
 
 class R1_CanBus {
 public:
-    typedef void (OMOROBOT_R1::*R1_NewCanRxEvent)(struct can_frame canRxMsg);
-    R1_CanBus(void);
-    R1_CanBus(uint16_t cspin);
-    R1_CanBus(MCP2515* mcp2515);
-    void begin_bus(void);
-    void scan(void);
-    void onNewCanRx(OMOROBOT_R1* obj, R1_NewCanRxEvent cbEvent);
-    void set_vehicle_type(R1_VEHICLE_TYPE type);
-    void set_control_mode(R1_CONTROL_MODE_TYPE mode);
-    void cmd_VW(int16_t v_mm_s, int16_t w_mrad_s);
-    void cmd_diffv(int16_t v_l_mm_s, int16_t v_r_mm_s);
-    void cmd_pl_dac_angle(int16_t dac, int16_t angle);
-    void request_odo(bool reset);
-    void set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
+   typedef void (OMOROBOT_R1::*R1_NewCanRxEvent)(struct can_frame canRxMsg);
+   R1_CanBus(void);
+   R1_CanBus(uint16_t cspin);
+   R1_CanBus(MCP2515* mcp2515);
+   void begin_bus(void);
+   void scan(void);
+   void onNewCanRx(OMOROBOT_R1* obj, R1_NewCanRxEvent cbEvent);
+   void set_vehicle_type(R1_VEHICLE_TYPE type);
+   void set_control_mode(R1_CONTROL_MODE_TYPE mode);
+   void cmd_VW(int16_t v_mm_s, int16_t w_mrad_s);
+   void cmd_diffv(int16_t v_l_mm_s, int16_t v_r_mm_s);
+   void cmd_pl_dac_angle(int16_t dac, int16_t angle);
+   void request_odo(bool reset);
+   void set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
 
 private:
-    typedef struct CanCommandType{
-        uint8_t     cmd_byte;   /// Command byte
-        uint16_t    data_1;       /// command data
-        uint16_t    data_2;
-        uint8_t     aux_byte;
-    }CanCommandType;
+   typedef struct CanCommandType{
+      uint8_t     cmd_byte;   /// Command byte
+      uint16_t    data_1;       /// command data
+      uint16_t    data_2;
+      uint8_t     aux_byte;
+   }CanCommandType;
 
-    MCP2515*                _mcp2515;
-    R1_NewCanRxEvent        _cbCanRxEvent;
-    OMOROBOT_R1*            _cbObj;             //Ojbect to hold OMOROBOT_R1 class
-    R1_VEHICLE_TYPE         _vehicle_type;      //Vehicle type
+   MCP2515*                _mcp2515;
+   R1_NewCanRxEvent        _cbCanRxEvent;
+   OMOROBOT_R1*            _cbObj;             //Ojbect to hold OMOROBOT_R1 class
+   R1_VEHICLE_TYPE         _vehicle_type;      //Vehicle type
 
-    struct can_frame        _canRxMsg;
-    R1_CONTROL_MODE_TYPE    _control_mode;
-    CanCommandType          _canCmd;
-    struct can_frame        _can_tx_odo;
-    struct can_frame        _can_tx_cmd;
-    bool _can_extern;
-    void sendCommand(CanCommandType cmd);
-    int can_TxMsg_init(can_frame* frame, int id, int dlc);
+   struct can_frame        _canRxMsg;
+   R1_CONTROL_MODE_TYPE    _control_mode;
+   CanCommandType          _canCmd;
+   struct can_frame        _can_tx_odo;
+   struct can_frame        _can_tx_cmd;
+   bool _can_extern;
+   void sendCommand(CanCommandType cmd);
+   int can_TxMsg_init(can_frame* frame, int id, int dlc);
 };
 
 #endif

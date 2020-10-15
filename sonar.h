@@ -17,17 +17,17 @@
 class SONAR
 {
 public:
-    SONAR(int pin_trigger, int pin_echo);
-    double  measure_cm(void);
-    void    set_detection_range(double cm);
-    bool    detected();
-    void    set_range(double cm);
+   SONAR(int pin_trigger, int pin_echo);
+   double  measure_cm(void);
+   void    set_detection_range(double cm);
+   bool    detected();
+   void    set_range(double cm);
 private:
 
-    double _measure_prev;
-    int _pin_trigger;
-    int _pin_echo;
-    bool _detected;
+   double _measure_prev;
+   int _pin_trigger;
+   int _pin_echo;
+   bool _detected;
 };
 
 #endif

@@ -63,72 +63,72 @@ typedef struct {
 
 class OMOROBOT_R1
 {
-    typedef void (*loop_event)(void);
-    typedef int (R1_Controller::*m_line_control_event)(int);
-    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
+   typedef void (*loop_event)(void);
+   typedef int (R1_Controller::*m_line_control_event)(int);
+   typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
     
-    typedef void (*R1_NewDataClientEvent)(R1_MessageType);
-    typedef void (*R1_NewTagReadEvent)(Tag_Struct);
-    OMOROBOT_R1();
-    OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
-    OMOROBOT_R1(MCP2515* mcp2515);
+   typedef void (*R1_NewDataClientEvent)(R1_MessageType);
+   typedef void (*R1_NewTagReadEvent)(Tag_Struct);
+   OMOROBOT_R1();
+   OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
+   OMOROBOT_R1(MCP2515* mcp2515);
 
-    void    begin(void);
-    void    onNewData(R1_NewDataClientEvent cbEvent);
-    void    onNewTag(R1_NewTagReadEvent cbEvent);
-    void    spin(void);
-    void    control_motor_VW(int V, int W);
-    void    request_odo();
-    void    set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode);
-    //void    set_vehicle_type(R1_VEHICLE_TYPE type);
-    void    set_lineoutTime(int ms);
-    void    new_can_line(struct can_frame can_rx);
-    void    new_can_odo(struct can_frame can_rx);
-    void    go(int target_speed);
-    void    go(void);
-    void    stop();
-    void    pause();
-    bool    is_going();
-    int     get_odo_l();
-    int     get_odo_r();
-    int8_t  get_linePos();
-    int     get_lineoutTimer();
-    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
-    void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
-    void    start_turn(Turn_DirectionType dir, int turn_odo_cnt);
-    void    set_turn_speed(uint16_t turn_W);
-    void    set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
-    void    set_v_accel(uint16_t accel);
-    void    set_pid_gains(PID_Type pid);
+   void    begin(void);
+   void    onNewData(R1_NewDataClientEvent cbEvent);
+   void    onNewTag(R1_NewTagReadEvent cbEvent);
+   void    spin(void);
+   void    control_motor_VW(int V, int W);
+   void    request_odo();
+   void    set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode);
+   //void    set_vehicle_type(R1_VEHICLE_TYPE type);
+   void    set_lineoutTime(int ms);
+   void    new_can_line(struct can_frame can_rx);
+   void    new_can_odo(struct can_frame can_rx);
+   void    go(int target_speed);
+   void    go(void);
+   void    stop();
+   void    pause();
+   bool    is_going();
+   int     get_odo_l();
+   int     get_odo_r();
+   int8_t  get_linePos();
+   int     get_lineoutTimer();
+   //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
+   void    set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
+   void    start_turn(Turn_DirectionType dir, int turn_odo_cnt);
+   void    set_turn_speed(uint16_t turn_W);
+   void    set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
+   void    set_v_accel(uint16_t accel);
+   void    set_pid_gains(PID_Type pid);
 private:
     
-    R1_NewDataClientEvent   _cbDataEvent;
-    R1_NewTagReadEvent      _cbTagEvent;
-    R1_DriveMode            _drive_mode;
-    R1_VEHICLE_TYPE         _vehicle_type;
-    R1_Controller           _controller;
-    loop_event              _3ms_loop;
-    loop_event              _10ms_loop;
-    m_speed_control_event   _5ms_speed_control;
-    m_line_control_event    _10ms_line_control;
-    //bool                    _odo_reset = false;
-    R1_CanBus               _canBus;
-    uint64_t                _odoRequest_millis_last;
-    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
-    bool                    _isLineOut = false;
+   R1_NewDataClientEvent   _cbDataEvent;
+   R1_NewTagReadEvent      _cbTagEvent;
+   R1_DriveMode            _drive_mode;
+   R1_VEHICLE_TYPE         _vehicle_type;
+   R1_Controller           _controller;
+   loop_event              _3ms_loop;
+   loop_event              _10ms_loop;
+   m_speed_control_event   _5ms_speed_control;
+   m_line_control_event    _10ms_line_control;
+   //bool                    _odo_reset = false;
+   R1_CanBus               _canBus;
+   uint64_t                _odoRequest_millis_last;
+   uint64_t                _lineDetect_millis_last;            //Last time line detected millis
+   bool                    _isLineOut = false;
 
-    uint64_t                _3ms_loop_millis_last;
-    uint64_t                _10ms_loop_millis_last;
-    uint64_t                _100ms_loop_millis_last;
-    bool                    _can_rx_extern = false;             //Can rx read performed externally
-    uint8_t                 _tag_data_prev[4];
-    uint16_t                _same_tag_reset_timer;
-    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
-    //ControlMessageType      _controlMsg;
-    void newCanRxEvent(can_frame can_rx);
-    //void controlMessageInit(ControlMessageType* msg);
-    //void sendControlMessage(ControlMessageType* msg);
+   uint64_t                _3ms_loop_millis_last;
+   uint64_t                _10ms_loop_millis_last;
+   uint64_t                _100ms_loop_millis_last;
+   bool                    _can_rx_extern = false;             //Can rx read performed externally
+   uint8_t                 _tag_data_prev[4];
+   uint16_t                _same_tag_reset_timer;
+   Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
+   //ControlMessageType      _controlMsg;
+   void newCanRxEvent(can_frame can_rx);
+   //void controlMessageInit(ControlMessageType* msg);
+   //void sendControlMessage(ControlMessageType* msg);
 };
 
 #endif
