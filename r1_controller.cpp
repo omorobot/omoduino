@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "r1_controller.h"
 
 R1_Controller::R1_Controller()

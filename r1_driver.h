@@ -22,48 +22,52 @@
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
 class MCP2515;
-//class R1_CanBus;
 
-
-enum R1_DriveMode{
-    R1DRV_DefaultMode,
-    R1DRV_LineTracerMode        ///Set to line tracer mode when Line sensor available
+enum DRIVE_MODE{
+    DRIVE_MODE_DEFAULT,
+    DRIVE_MODE_LINETRACER        ///Set to line tracer mode when Line sensor available
 };
-enum Drive_DirectionType{
-    Drive_Forward,
-    Drive_Reverse
+enum DRIVE_DIRECTION{
+    DIRECTION_FORWARD,
+    DIRECTION_REVERSE
 };
-enum Line_AlignmentType{
-    Line_Forward,
-    Line_Reverse
+enum LINE_FACING{
+    FACING_FORWARD,
+    FACING_REVERSE
 };
-enum Turn_DirectionType{
-    Turn_Right,
-    Turn_Left
+enum TURN_DIRECTION{
+    TURN_RIGHT,
+    TURN_LEFT
+};
+enum PL_LOAD_UNLOAD{
+    PL_LOADING,
+    PL_UNLOADING
 };
 
 enum TAG_Type{
-    TAG_None    = 0,
-    TAG_DEPOT   = 0xA0,     //160
-    TAG_POU     = 0xA2,     //162
-    TAG_APPROACH= 0xAA,     //170
-    TAG_TURN    = 0xB0,     //176
-    TAG_LIFT    = 0xB1,     //177
-    TAG_CIN     = 0xC1,     //193
-    TAG_COUT    = 0xC0,      //192
-    TAG_SPEED   = 0xE0,     //224
-    TAG_SONAR   = 0xE2,     //226
-    TAG_READY   = 0xFE     //254
+    TAG_None                = 0,
+    TAG_DEPOT               = 0xA0,     //160
+    TAG_POU                 = 0xA2,     //162
+    TAG_APPROACH            = 0xAA,     //170
+    TAG_TURN                = 0xB0,     //176
+    TAG_LIFT                = 0xB1,     //177
+    TAG_TURN_PL             = 0xB2,     //178
+    TAG_LOAD_UNLOAD_STOP    = 0xB3, //179
+    TAG_TURN_PL2            = 0xB4, //180
+    TAG_CIN                 = 0xC1,     //193
+    TAG_COUT                = 0xC0,      //192
+    TAG_SPEED               = 0xE0,     //224
+    TAG_SONAR               = 0xE2,     //226
+    TAG_READY               = 0xFE     //254
 };
 
-typedef struct {
+typedef struct Tag_Struct{
     uint8_t     bytes[4];
     TAG_Type    type;
 } Tag_Struct;
 
 class OMOROBOT_R1
 {
-   typedef void (*loop_event)(void);
    typedef int (R1_Controller::*m_line_control_event)(int);
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
@@ -80,8 +84,7 @@ public:
    void     spin(void);
    void     control_motor_VW(int V, int W);
    void     request_odo();
-   void     set_driveMode(R1_VEHICLE_TYPE type, R1_DriveMode mode);
-   //void    set_vehicle_type(R1_VEHICLE_TYPE type);
+   void     set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode);
    void     set_lineoutTime(int ms);
    void     new_can_line(struct can_frame can_rx);
    void     new_can_odo(struct can_frame can_rx);
@@ -89,32 +92,34 @@ public:
    void     go(void);
    void     stop();
    void     pause();
-   bool     is_going();
+   bool     get_go_flag();
    int      get_odo_l();
    int      get_odo_r();
    int8_t   get_linePos();
-   int      get_lineoutTimer();
+   void     set_load_unload_stop();
+   //int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
-   void     set_drive_direction(Drive_DirectionType dir, Line_AlignmentType);
-   void     start_turn(Turn_DirectionType dir, int turn_odo_cnt);
+   void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
+   void     start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt);
+   void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
+   void     start_turn_timer2(TURN_DIRECTION dir, int speed, int time);
    //void     set_turn_speed(uint16_t turn_W);
    void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
    void     set_v_accel(uint16_t accel);
    void     set_pid_gains(PID_Type pid);
    void     set_turning_speed(int V, int W);
 private:
-
+   //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
    R1_NewTagReadEvent      _cbTagEvent;
-   R1_DriveMode            _drive_mode;
+   DRIVE_MODE              _drive_mode;
    R1_VEHICLE_TYPE         _vehicle_type;
-   R1_Controller           _controller;
-   loop_event              _3ms_loop;
-   loop_event              _10ms_loop;
-   m_speed_control_event   _5ms_speed_control;
-   m_line_control_event    _10ms_line_control;
-   //bool                    _odo_reset = false;
-   R1_CanBus               _canBus;
+   R1_Controller           Controller;
+
+   m_speed_control_event   m_5ms_speed_control;
+   m_line_control_event    m_10ms_line_control;
+   //m_process               m_turn_process;
+   R1_CanBus               CanBus;
    uint64_t                _odoRequest_millis_last;
    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
    bool                    _isLineOut;
@@ -132,10 +137,18 @@ private:
    int       _resume_speed;          // target speed when paused
 
    uint8_t                 _turn_state;
+   uint8_t                 _turn_timer_state;
+   uint8_t                 _turn_timer_state2;
    uint8_t                 _turn_cmd;
    uint16_t                _turn_odo_cnt;
-   uint16_t                _turning_W;
-   uint16_t                _turning_V;
+   int16_t                 _turning_W;
+   int16_t                 _turning_V;
+   uint16_t                _turn_timer_set;
+   uint16_t                _turn_timer_set2;
+   uint64_t                _turn_timer_start_millis;
+   uint64_t                _turn_timer_start_millis2;
+   PL_LOAD_UNLOAD          _load_unload;
+   bool                    _is_load_unload_finished;
    bool                    _odo_reset;
    int                     _odo_l;
    int                     _odo_r;
@@ -147,13 +160,12 @@ private:
    uint8_t                 _tag_data_prev[4];
    uint16_t                _same_tag_reset_timer;
    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
-   //ControlMessageType      _controlMsg;
    struct can_frame _canRxMsg;
 
    void newCanRxEvent(can_frame can_rx);
-   void turn_process(void);
-   //void controlMessageInit(ControlMessageType* msg);
-   //void sendControlMessage(ControlMessageType* msg);
+   void turn_process_odo(void);
+   void turn_process_timer(void);
+   void turn_process_timer2(void);
 };
 
 #endif

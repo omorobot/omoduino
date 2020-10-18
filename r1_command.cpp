@@ -35,24 +35,24 @@ void R1_CanBus::set_control_mode(R1_CONTROL_MODE_TYPE mode)
 {
    switch(mode) {
    case CONTROL_MODE_VW:
-      if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
+      if(_vehicle_type == VEHICLE_TYPE_PL153) {
          _canCmd.cmd_byte = CAN_MOTOR_CMD_VW_PL;
       } else {
          _canCmd.cmd_byte = CAN_MOTOR_CMD_VW;
       }
       break;
    case CONTROL_MODE_DIFFV:
-      if(_vehicle_type!=R1_VEHICLE_TYPE_PL153) {
+      if(_vehicle_type!=VEHICLE_TYPE_PL153) {
          _canCmd.cmd_byte = CAN_MOTOR_CMD_DIFF_V;
       }
       break;
    case CONTROL_MODE_RPM:
-      if(_vehicle_type!=R1_VEHICLE_TYPE_PL153) {
+      if(_vehicle_type!=VEHICLE_TYPE_PL153) {
          _canCmd.cmd_byte = CAN_MOTOR_CMD_RPM;
       }
       break;
    case CONTROL_MODE_DAC_ANGLE:
-      if(_vehicle_type == R1_VEHICLE_TYPE_PL153) {
+      if(_vehicle_type == VEHICLE_TYPE_PL153) {
          _canCmd.cmd_byte = CAN_MOTOR_CMD_DAC_ANGLE;
       }
       break;
