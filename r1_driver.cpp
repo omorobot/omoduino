@@ -2,7 +2,16 @@
 #include <SPI.h>
 #include <mcp2515.h>
 #include "r1_driver.h"
+#include <string.h>
 
+int OMOROBOT_R1::get_target_speed()
+{
+   return _target_speed;
+}
+void OMOROBOT_R1::set_speed(int V)
+{
+   _target_speed = V;
+}
 
 void OMOROBOT_R1::turn_process_odo(void)
 {
@@ -237,6 +246,7 @@ void OMOROBOT_R1::begin() {
    _target_speed = 0;
    _goal_V = 0;
    _goal_W = 0;
+   _goal_V_gain = 0;
    _cmd_speed = 0;
    _isLineOut = false;
    _lineOut_timeOut_ms = 0;
@@ -251,6 +261,7 @@ void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent){ _cbTagEvent = cbEvent;}
 * @brief R1 main loop
 */
 void OMOROBOT_R1::spin() {
+   
    if(!_can_rx_extern) {
       CanBus.scan();
    }
@@ -269,7 +280,25 @@ void OMOROBOT_R1::spin() {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
+            if(_goal_V > 300) {
+               if(_line_pos > 4.0||_line_pos < -4.0) {
+                  if(_line_pos > 5.0 || _line_pos < -5.0) {
+                     if(_line_pos > 6.0 || _line_pos < -6.0) {
+                        _goal_V_gain = -450;
+                     } else {
+                        _goal_V_gain = -300;
+                     }
+                  } else {
+                     _goal_V_gain = -150;
+                  }
+               } else {
+                  _goal_V_gain = 0;
+               }
+            } else {
+               _goal_V_gain = 0;
+            }
          } else {
+            _goal_V_gain = 0;
             _goal_W = 0;
          }
          // if(this->m_turn_process) {
@@ -288,12 +317,14 @@ void OMOROBOT_R1::spin() {
             CanBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);  
          } else {
             // For R1 send V and W
-            CanBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
+            CanBus.cmd_VW((_goal_V+_goal_V_gain)*_v_dir, _goal_W*_w_dir);
          }
       }
       _10ms_loop_millis_last = millis();
    }
    if(millis() - _100ms_loop_millis_last > 99) {
+      //Serial.print("Set_V:");
+      //Serial.println(_goal_V);
    #ifdef SAME_TAG_REFRESH_EN
       if(_same_tag_reset_timer>0) {
          if(_same_tag_reset_timer > 199) {
@@ -321,7 +352,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
    switch(can_rx.data[0]) {
    case 1:   //Line detect
       _isLineOut = false;
-      _line_pos = (int8_t)can_rx.data[1];
+      _line_pos = (double)can_rx.data[1]; //was int8_t
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
       for(i =0; i<4; i++) {
@@ -349,7 +380,49 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       }
       _cbDataEvent(R1MSG_LINEOUT);
       break;
+   case 3:  //magnetic line
+      _line_pos = get_magnetic_linePos(can_rx);
+      //Serial.print("Line : ");
+      //Serial.println(_line_pos);
+      break;
    }
+}
+void OMOROBOT_R1::new_can_tag(struct can_frame can_rx)
+{
+   // uint8_t tag_diff_cnt = 0;
+   // for(i =0; i<4; i++) {
+   //    if(_tag_data_prev[i]!=can_rx.data[4+i]) {
+   //       tag_diff_cnt++;
+   //    }
+   // }
+   // Serial.print("TAG:");
+   //    Serial.print(_new_tagStr.bytes[0],HEX);
+   //    Serial.print(",");
+   //    Serial.print(_new_tagStr.bytes[1],HEX);
+   //    Serial.print(",");
+   //    Serial.print(_new_tagStr.bytes[2],HEX);
+   //    Serial.print(",");
+   //    Serial.println(_new_tagStr.bytes[3],HEX);
+   if(memcmp(_tag_data_prev, can_rx.data, 4)!=0)
+   {
+      _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[0];
+      _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[1];
+      _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[2];
+      _tag_data_prev[3] = _new_tagStr.bytes[3] = can_rx.data[3];
+      Serial.print("TAG:");
+      Serial.print(_new_tagStr.bytes[0],HEX);
+      Serial.print(",");
+      Serial.print(_new_tagStr.bytes[1],HEX);
+      Serial.print(",");
+      Serial.print(_new_tagStr.bytes[2],HEX);
+      Serial.print(",");
+      Serial.println(_new_tagStr.bytes[3],HEX);
+      _new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
+      _cbTagEvent(_new_tagStr);
+   } 
+   // else {
+   //    _same_tag_reset_timer = 2500;
+   // }
 }
 /**
 * @brief Process odoMsg from can bus
@@ -368,7 +441,7 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
       switch(_canRxMsg.data[0]) {
       case 1:   //Line detect
          _isLineOut = false;
-         _line_pos = (int8_t)_canRxMsg.data[1];
+         _line_pos = (double)_canRxMsg.data[1]; //was int8_t
          _lineDetect_millis_last = millis();    //Update line detection time
          _lineOut_timer = 0;
          _cbDataEvent(R1MSG_LINEPOS);
@@ -489,12 +562,16 @@ void OMOROBOT_R1::stop()
    CanBus.set_pl_lift_mode(PL_LIFT_UP);
 }
 /// Only reset target speed to 0 and wait for go()
-void     OMOROBOT_R1::pause()       {  _target_speed = 0; }
+void     OMOROBOT_R1::pause()       {  
+   _target_speed = 0; 
+   Controller.set_target_v(_target_speed);
+   }
 
 bool     OMOROBOT_R1::get_go_flag() {  return _go_flag;}
 int      OMOROBOT_R1::get_odo_l()   {  return _odo_l;}
 int      OMOROBOT_R1::get_odo_r()   {  return _odo_r;}
-int8_t   OMOROBOT_R1::get_linePos() {  return _line_pos;}
+int      OMOROBOT_R1::get_linePos() {  return _line_pos;}
+int      OMOROBOT_R1::get_lineout_flag() {return _isLineOut;}
 /// Initiate turn process to start with direction and turn odometry count from wheel
 /// Turn angle is determined by odometry count and dependent to wheel size
 void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
@@ -544,4 +621,219 @@ void OMOROBOT_R1::start_turn_timer2(TURN_DIRECTION dir, int speed, int time)
 void OMOROBOT_R1::set_load_unload_stop()
 {
    _is_load_unload_finished = true;
+}
+
+double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
+{
+   double line_pos = 0.0;
+   uint16_t magnetic_data = ((mag_rx.data[6] << 8) & 0xFF00) | (mag_rx.data[7] & 0x00FF);
+   uint8_t detectArr[15];
+   uint16_t set_pos_prev = 0; //Set position
+   uint8_t setCount = 0;   //Stores consecutive number set in magnetic data
+   //if(magnetic_data&0x01) detectArr[0] = 1;
+   for(int i = 1; i<16; i++) {
+      if((magnetic_data>>i)&0x01) {
+         detectArr[setCount] = i-1;
+         setCount++;
+      }
+      // if((magnetic_data>>i)&0x01) {
+      //    if((i-1)==set_pos_prev) {
+      //       detecArr[setCount] = i;
+      //       setCount++;
+      //    } 
+      //    set_pos_prev = i;
+      // }
+   }
+   double posSum = 0.0;
+   double gain = 0.3;
+   if(setCount>0) {
+      for(int j = 0; j<setCount; j++) {
+         posSum+=detectArr[j];
+      }
+      line_pos = (double)posSum / (setCount) - 7.0;
+      line_pos+= gain*line_pos;
+      _line_pos_last = line_pos;
+   }else {
+      _isLineOut = true;
+      line_pos = _line_pos_last*1.3;
+      if( (millis() - _lineDetect_millis_last) > 6000) {    //_lineOut_timeOut_ms is not working
+         stop();
+      }
+      //line_pos = 0.0;
+   }
+   
+   /*
+   switch(magnetic_data)
+   {
+      case 0:     //line out
+         _isLineOut = true;
+         if( (millis() - _lineDetect_millis_last) > 1000) {    //_lineOut_timeOut_ms is not working
+            stop();
+         }
+      break;
+      case B11111<<5:
+      line_pos = 0;
+      break;
+      case B1111<<5:
+      line_pos = 0;
+      break;
+      case B1111<<6:
+      line_pos = 0;
+      break;
+      case B111<<6:
+      line_pos = 0;
+      break;
+      case B11111<<4:
+      line_pos = -1;
+      break;
+      case B11111<<3:
+      line_pos = -2;
+      break;
+      case B11111<<2:
+      line_pos = -4;
+      break;
+      case B11111<<1:
+      line_pos = -6;
+      break;
+      case B11111<<0:
+      line_pos = -9;
+      break;
+      case B1111<<4:
+      line_pos = -1;
+      break;
+      case B1111<<3:
+      line_pos = -2;
+      break;
+      case B1111<<2:
+      line_pos = -3;
+      break;
+      case B1111<<1:
+      line_pos = -5;
+      break;
+      case B1111:
+      line_pos = -7;
+      break;
+      case B111<<5:
+      line_pos = -1;
+      break;
+      case B111<<4:
+      line_pos = -2;
+      break;
+      case B111<<3:
+      line_pos = -3;
+      break;
+      case B111<<2:
+      line_pos = -4;
+      break;
+      case B111<<1:
+      line_pos = -6;
+      break;
+      case B111:
+      line_pos = -8;
+      break;
+      case B11<<6:
+      line_pos = -1;
+      break;
+      case B11<<5:
+      line_pos = -2;
+      break;
+      case B11<<4:
+      line_pos = -3;
+      break;
+      case B11<<3:
+      line_pos = -4;
+      break;
+      case B11<<2:
+      line_pos = -5;
+      break;
+      case B11<<1:
+      line_pos = -7;
+      break;
+      case B11:
+      line_pos = -9;
+      break;
+      case B1:
+      line_pos = -11;
+      break;
+      case B11111<<6:
+      line_pos = 1;
+      break;
+      case B11111<<7:
+      line_pos = 2;
+      break;
+      case B11111<<8:
+      line_pos = 4;
+      break;
+      case B11111<<9:
+      line_pos = 6;
+      break;
+      case B11111<<10:
+      line_pos = 9;
+      break;
+      case B1111<<7:
+      line_pos = 1;
+      break;
+      case B1111<<8:
+      line_pos = 2;
+      break;
+      case B1111<<9:
+      line_pos = 3;
+      break;
+      case B1111<<10:
+      line_pos = 5;
+      break;
+      case B1111<<11:
+      line_pos = 7;
+      break;
+      case B111<<7:
+      line_pos = 1;
+      break;
+      case B111<<8:
+      line_pos = 2;
+      break;
+      case B111<<9:
+      line_pos = 3;
+      break;
+      case B111<<10:
+      line_pos = 4;
+      break;
+      case B111<<11:
+      line_pos = 6;
+      break;
+      case B111<<12:
+      line_pos = 8;
+      break;
+      case B11<<7:
+      line_pos = 1;
+      break;
+      case B11<<8:
+      line_pos = 2;
+      break;
+      case B11<<9:
+      line_pos = 3;
+      break;
+      case B11<<10:
+      line_pos = 4;
+      break;
+      case B11<<11:
+      line_pos = 5;
+      break;
+      case B11<<12:
+      line_pos = 7;
+      break;
+      case B11<<13:
+      line_pos = 9;
+      break;
+      case B1<<14:
+      line_pos = 11;
+      break;
+   }
+   */
+   if(magnetic_data != 0){
+      _isLineOut = false;
+      _lineDetect_millis_last = millis();    //Update line detection time
+      _lineOut_timer = 0;
+   }
+   
+   return line_pos;
 }

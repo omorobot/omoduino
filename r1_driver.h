@@ -68,7 +68,7 @@ typedef struct Tag_Struct{
 
 class OMOROBOT_R1
 {
-   typedef int (R1_Controller::*m_line_control_event)(int);
+   typedef int (R1_Controller::*m_line_control_event)(double);
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
     
@@ -88,6 +88,7 @@ public:
    void     set_lineoutTime(int ms);
    void     new_can_line(struct can_frame can_rx);
    void     new_can_odo(struct can_frame can_rx);
+   void     new_can_tag(struct can_frame can_rx);
    void     go(int target_speed);
    void     go(void);
    void     stop();
@@ -95,7 +96,9 @@ public:
    bool     get_go_flag();
    int      get_odo_l();
    int      get_odo_r();
-   int8_t   get_linePos();
+   int      get_linePos();
+    int      get_lineout_flag();
+   double      get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
    //int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
@@ -108,6 +111,8 @@ public:
    void     set_v_accel(uint16_t accel);
    void     set_pid_gains(PID_Type pid);
    void     set_turning_speed(int V, int W);
+   int      get_target_speed(void);
+   void     set_speed(int V);
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
@@ -126,11 +131,13 @@ private:
    bool                    _go_flag;
    int                     _cmd_speed;
    int                     _goal_V;
+   int                     _goal_V_gain;
    int                     _goal_W;
    int                     _v_dir;
    int                     _w_dir;
 
-   int8_t                  _line_pos;
+   double                  _line_pos;   //was int8_t
+   double                  _line_pos_last;
    int       _lineOut_timer;
    int       _lineOut_timeOut_ms;
    int       _target_speed;          // target speed when go flag is set

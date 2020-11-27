@@ -54,9 +54,26 @@ int   R1_Controller::speed_control(int cmd_v, bool go_flag)
    return cmd_v;
 }
 
-int   R1_Controller::line_control_vw(int linePos)
+int   R1_Controller::speed_w_control(int origin_val, int target_val, int increase)
 {
-   double error = (double)linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
+   if(target_val > origin_val){
+      if(target_val > (origin_val + increase)){
+         return origin_val + increase;
+      } else{
+         return target_val;
+      }
+   } else{
+      if(target_val < (origin_val - increase)){
+         return origin_val - increase;
+      }else{
+         return target_val;
+      }
+   }
+
+}
+int   R1_Controller::line_control_vw(double linePos)
+{
+   double error = linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
    _pid_l.error_i += error;
    double error_d = error - _pid_l.error_prev;
    _pid_l.error_prev = error;  
@@ -68,9 +85,9 @@ int   R1_Controller::line_control_vw(int linePos)
    return (int)output;
 }
 
-int   R1_Controller::line_control_angle(int linePos)
+int   R1_Controller::line_control_angle(double linePos)
 {
-   double error = (double)linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
+   double error = linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
    _pid_l.error_i += error;
    double error_d = error - _pid_l.error_prev;
    _pid_l.error_prev = error;  
