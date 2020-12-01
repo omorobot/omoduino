@@ -24,46 +24,46 @@
 class MCP2515;
 
 enum DRIVE_MODE{
-    DRIVE_MODE_DEFAULT,
-    DRIVE_MODE_LINETRACER        ///Set to line tracer mode when Line sensor available
+   DRIVE_MODE_DEFAULT,
+   DRIVE_MODE_LINETRACER        ///Set to line tracer mode when Line sensor available
 };
 enum DRIVE_DIRECTION{
-    DIRECTION_FORWARD,
-    DIRECTION_REVERSE
+   DIRECTION_FORWARD,
+   DIRECTION_REVERSE
 };
 enum LINE_FACING{
-    FACING_FORWARD,
-    FACING_REVERSE
+   FACING_FORWARD,
+   FACING_REVERSE
 };
 enum TURN_DIRECTION{
-    TURN_RIGHT,
-    TURN_LEFT
+   TURN_RIGHT,
+   TURN_LEFT
 };
 enum PL_LOAD_UNLOAD{
-    PL_LOADING,
-    PL_UNLOADING
+   PL_LOADING,
+   PL_UNLOADING
 };
 
 enum TAG_Type{
-    TAG_None                = 0,
-    TAG_DEPOT               = 0xA0,     //160
-    TAG_POU                 = 0xA2,     //162
-    TAG_APPROACH            = 0xAA,     //170
-    TAG_TURN                = 0xB0,     //176
-    TAG_LIFT                = 0xB1,     //177
-    TAG_TURN_PL             = 0xB2,     //178
-    TAG_LOAD_UNLOAD_STOP    = 0xB3, //179
-    TAG_TURN_PL2            = 0xB4, //180
-    TAG_CIN                 = 0xC1,     //193
-    TAG_COUT                = 0xC0,      //192
-    TAG_SPEED               = 0xE0,     //224
-    TAG_SONAR               = 0xE2,     //226
-    TAG_READY               = 0xFE     //254
+   TAG_None                = 0,
+   TAG_DEPOT               = 0xA0,     //160
+   TAG_POU                 = 0xA2,     //162
+   TAG_APPROACH            = 0xAA,     //170
+   TAG_TURN                = 0xB0,     //176
+   TAG_LIFT                = 0xB1,     //177
+   TAG_TURN_PL             = 0xB2,     //178
+   TAG_LOAD_UNLOAD_STOP    = 0xB3,     //179
+   TAG_TURN_PL2            = 0xB4,     //180
+   TAG_CIN                 = 0xC1,     //193
+   TAG_COUT                = 0xC0,     //192
+   TAG_SPEED               = 0xE0,     //224
+   TAG_SONAR               = 0xE2,     //226
+   TAG_READY               = 0xFE      //254
 };
 
 typedef struct Tag_Struct{
-    uint8_t     bytes[4];
-    TAG_Type    type;
+   uint8_t     bytes[4];
+   TAG_Type    type;
 } Tag_Struct;
 
 class OMOROBOT_R1
@@ -97,7 +97,7 @@ public:
    int      get_odo_l();
    int      get_odo_r();
    int      get_linePos();
-    int      get_lineout_flag();
+   int      get_lineout_flag();
    double      get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
    //int      get_lineoutTimer();

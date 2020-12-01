@@ -387,38 +387,28 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       break;
    }
 }
+/**
+ * @brief When new tag message found
+ */
 void OMOROBOT_R1::new_can_tag(struct can_frame can_rx)
 {
-   // uint8_t tag_diff_cnt = 0;
-   // for(i =0; i<4; i++) {
-   //    if(_tag_data_prev[i]!=can_rx.data[4+i]) {
-   //       tag_diff_cnt++;
-   //    }
-   // }
-   // Serial.print("TAG:");
-   //    Serial.print(_new_tagStr.bytes[0],HEX);
-   //    Serial.print(",");
-   //    Serial.print(_new_tagStr.bytes[1],HEX);
-   //    Serial.print(",");
-   //    Serial.print(_new_tagStr.bytes[2],HEX);
-   //    Serial.print(",");
-   //    Serial.println(_new_tagStr.bytes[3],HEX);
-   if(memcmp(_tag_data_prev, can_rx.data, 4)!=0)
+   if(memcmp(_tag_data_prev, can_rx.data, 4)!=0)         //New Tag bytes found
    {
-      _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[0];
+      //Update prev_tag
+      _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[0];  
       _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[1];
       _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[2];
       _tag_data_prev[3] = _new_tagStr.bytes[3] = can_rx.data[3];
-      Serial.print("TAG:");
-      Serial.print(_new_tagStr.bytes[0],HEX);
-      Serial.print(",");
-      Serial.print(_new_tagStr.bytes[1],HEX);
-      Serial.print(",");
-      Serial.print(_new_tagStr.bytes[2],HEX);
-      Serial.print(",");
-      Serial.println(_new_tagStr.bytes[3],HEX);
+      // Serial.print("TAG:");
+      // Serial.print(_new_tagStr.bytes[0],HEX);
+      // Serial.print(",");
+      // Serial.print(_new_tagStr.bytes[1],HEX);
+      // Serial.print(",");
+      // Serial.print(_new_tagStr.bytes[2],HEX);
+      // Serial.print(",");
+      // Serial.println(_new_tagStr.bytes[3],HEX);
       _new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
-      _cbTagEvent(_new_tagStr);
+      _cbTagEvent(_new_tagStr);                          //Callback new Tag found event
    } 
    // else {
    //    _same_tag_reset_timer = 2500;
@@ -560,6 +550,7 @@ void OMOROBOT_R1::stop()
    _turn_timer_state2 = 0;
    _go_flag = false;
    CanBus.set_pl_lift_mode(PL_LIFT_UP);
+   _lineOut_timeOut_ms = 0;
 }
 /// Only reset target speed to 0 and wait for go()
 void     OMOROBOT_R1::pause()       {  
@@ -622,217 +613,44 @@ void OMOROBOT_R1::set_load_unload_stop()
 {
    _is_load_unload_finished = true;
 }
-
+/**
+ * @brief Try to find center position of the magnetic line from binary data 
+ * Example: [0][0][0][1][1][1][0][0][0][0][0][0][0][0][0]
+ * Add set position: 3+4+5 = 12
+ * Divide by 3 = 4
+ * Substract center position 4 - 7.5 = -3.5
+ **/
 double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
 {
    double line_pos = 0.0;
-   uint16_t magnetic_data = ((mag_rx.data[6] << 8) & 0xFF00) | (mag_rx.data[7] & 0x00FF);
+   uint16_t magnetic_data = ((mag_rx.data[6] << 8) & 0xFF00) | (mag_rx.data[7] & 0x00FF);    //Binary data[6][7] contains 1:detected, 0:undetected
    uint8_t detectArr[15];
-   uint16_t set_pos_prev = 0; //Set position
-   uint8_t setCount = 0;   //Stores consecutive number set in magnetic data
-   //if(magnetic_data&0x01) detectArr[0] = 1;
+   uint8_t setCount = 0;         //Stores consecutive number set in magnetic data
+   // Scan line data from 1 to 16 
    for(int i = 1; i<16; i++) {
       if((magnetic_data>>i)&0x01) {
          detectArr[setCount] = i-1;
          setCount++;
       }
-      // if((magnetic_data>>i)&0x01) {
-      //    if((i-1)==set_pos_prev) {
-      //       detecArr[setCount] = i;
-      //       setCount++;
-      //    } 
-      //    set_pos_prev = i;
-      // }
    }
-   double posSum = 0.0;
-   double gain = 0.3;
-   if(setCount>0) {
+   double gain = 1.3;
+   if( setCount>0 ) {
       for(int j = 0; j<setCount; j++) {
-         posSum+=detectArr[j];
+         line_pos+=detectArr[j];
       }
-      line_pos = (double)posSum / (setCount) - 7.0;
-      line_pos+= gain*line_pos;
-      _line_pos_last = line_pos;
-   }else {
-      _isLineOut = true;
-      line_pos = _line_pos_last*1.3;
-      if( (millis() - _lineDetect_millis_last) > 6000) {    //_lineOut_timeOut_ms is not working
-         stop();
-      }
-      //line_pos = 0.0;
-   }
-   
-   /*
-   switch(magnetic_data)
-   {
-      case 0:     //line out
-         _isLineOut = true;
-         if( (millis() - _lineDetect_millis_last) > 1000) {    //_lineOut_timeOut_ms is not working
-            stop();
-         }
-      break;
-      case B11111<<5:
-      line_pos = 0;
-      break;
-      case B1111<<5:
-      line_pos = 0;
-      break;
-      case B1111<<6:
-      line_pos = 0;
-      break;
-      case B111<<6:
-      line_pos = 0;
-      break;
-      case B11111<<4:
-      line_pos = -1;
-      break;
-      case B11111<<3:
-      line_pos = -2;
-      break;
-      case B11111<<2:
-      line_pos = -4;
-      break;
-      case B11111<<1:
-      line_pos = -6;
-      break;
-      case B11111<<0:
-      line_pos = -9;
-      break;
-      case B1111<<4:
-      line_pos = -1;
-      break;
-      case B1111<<3:
-      line_pos = -2;
-      break;
-      case B1111<<2:
-      line_pos = -3;
-      break;
-      case B1111<<1:
-      line_pos = -5;
-      break;
-      case B1111:
-      line_pos = -7;
-      break;
-      case B111<<5:
-      line_pos = -1;
-      break;
-      case B111<<4:
-      line_pos = -2;
-      break;
-      case B111<<3:
-      line_pos = -3;
-      break;
-      case B111<<2:
-      line_pos = -4;
-      break;
-      case B111<<1:
-      line_pos = -6;
-      break;
-      case B111:
-      line_pos = -8;
-      break;
-      case B11<<6:
-      line_pos = -1;
-      break;
-      case B11<<5:
-      line_pos = -2;
-      break;
-      case B11<<4:
-      line_pos = -3;
-      break;
-      case B11<<3:
-      line_pos = -4;
-      break;
-      case B11<<2:
-      line_pos = -5;
-      break;
-      case B11<<1:
-      line_pos = -7;
-      break;
-      case B11:
-      line_pos = -9;
-      break;
-      case B1:
-      line_pos = -11;
-      break;
-      case B11111<<6:
-      line_pos = 1;
-      break;
-      case B11111<<7:
-      line_pos = 2;
-      break;
-      case B11111<<8:
-      line_pos = 4;
-      break;
-      case B11111<<9:
-      line_pos = 6;
-      break;
-      case B11111<<10:
-      line_pos = 9;
-      break;
-      case B1111<<7:
-      line_pos = 1;
-      break;
-      case B1111<<8:
-      line_pos = 2;
-      break;
-      case B1111<<9:
-      line_pos = 3;
-      break;
-      case B1111<<10:
-      line_pos = 5;
-      break;
-      case B1111<<11:
-      line_pos = 7;
-      break;
-      case B111<<7:
-      line_pos = 1;
-      break;
-      case B111<<8:
-      line_pos = 2;
-      break;
-      case B111<<9:
-      line_pos = 3;
-      break;
-      case B111<<10:
-      line_pos = 4;
-      break;
-      case B111<<11:
-      line_pos = 6;
-      break;
-      case B111<<12:
-      line_pos = 8;
-      break;
-      case B11<<7:
-      line_pos = 1;
-      break;
-      case B11<<8:
-      line_pos = 2;
-      break;
-      case B11<<9:
-      line_pos = 3;
-      break;
-      case B11<<10:
-      line_pos = 4;
-      break;
-      case B11<<11:
-      line_pos = 5;
-      break;
-      case B11<<12:
-      line_pos = 7;
-      break;
-      case B11<<13:
-      line_pos = 9;
-      break;
-      case B1<<14:
-      line_pos = 11;
-      break;
-   }
-   */
-   if(magnetic_data != 0){
+      line_pos = line_pos / setCount - 7.5;
+      line_pos = line_pos * gain;
+      _line_pos_last = line_pos;       //Remember last known line pos 
       _isLineOut = false;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
+   } 
+   else {                            //No line is found
+      _isLineOut = true;
+      line_pos = _line_pos_last*1.3;   //Set line position as last known line pos
+      if( (millis() - _lineDetect_millis_last) > 6000) {    //_lineOut_timeOut_ms is not working
+         stop();
+      }
    }
    
    return line_pos;
