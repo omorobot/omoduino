@@ -533,7 +533,7 @@ void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
    }
 }
 
-void OMOROBOT_R1::set_driveMode_sbus(DRIVE_MODE mode)
+void OMOROBOT_R1::set_remoteMode(REMOTE_MODE mode)
 {
    this->_remote_mode = mode;
 }
