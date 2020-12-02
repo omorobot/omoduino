@@ -25,7 +25,12 @@ class MCP2515;
 
 enum DRIVE_MODE{
    DRIVE_MODE_DEFAULT,
-   DRIVE_MODE_LINETRACER        ///Set to line tracer mode when Line sensor available
+   DRIVE_MODE_LINETRACER,        ///Set to line tracer mode when Line sensor available
+};
+enum REMOTE_MODE{
+   REMOTE_NONE,
+   REMOTE_SBUS,
+   REMOTE_JOY
 };
 enum DRIVE_DIRECTION{
    DIRECTION_FORWARD,
@@ -85,6 +90,7 @@ public:
    void     control_motor_VW(int V, int W);
    void     request_odo();
    void     set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode);
+   void     set_remoteMode(REMOTE_MODE mode);
    void     set_lineoutTime(int ms);
    void     new_can_line(struct can_frame can_rx);
    void     new_can_odo(struct can_frame can_rx);
@@ -98,7 +104,7 @@ public:
    int      get_odo_r();
    int      get_linePos();
    int      get_lineout_flag();
-   double      get_magnetic_linePos(struct can_frame mag_rx);
+   double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
    //int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
@@ -113,6 +119,7 @@ public:
    void     set_turning_speed(int V, int W);
    int      get_target_speed(void);
    void     set_speed(int V);
+
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
@@ -136,12 +143,12 @@ private:
    int                     _v_dir;
    int                     _w_dir;
 
-   double                  _line_pos;   //was int8_t
+   double                  _line_pos;               //was int8_t
    double                  _line_pos_last;
-   int       _lineOut_timer;
-   int       _lineOut_timeOut_ms;
-   int       _target_speed;          // target speed when go flag is set
-   int       _resume_speed;          // target speed when paused
+   int                     _lineOut_timer;
+   int                      _lineOut_timeOut_ms;
+   int                      _target_speed;          // target speed when go flag is set
+   int                      _resume_speed;          // target speed when paused
 
    uint8_t                 _turn_state;
    uint8_t                 _turn_timer_state;
@@ -163,12 +170,12 @@ private:
    uint64_t                _5ms_loop_millis_last;
    uint64_t                _10ms_loop_millis_last;
    uint64_t                _100ms_loop_millis_last;
-   bool                    _can_rx_extern = false;             //Can rx read performed externally
+   bool                    _can_rx_extern = false;    //Can rx read performed externally
    uint8_t                 _tag_data_prev[4];
    uint16_t                _same_tag_reset_timer;
-   Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
+   Tag_Struct              _new_tagStr;               //Turn odo count to stop turn
    struct can_frame _canRxMsg;
-
+   REMOTE_MODE             _remote_mode;
    void newCanRxEvent(can_frame can_rx);
    void turn_process_odo(void);
    void turn_process_timer(void);

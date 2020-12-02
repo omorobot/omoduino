@@ -110,6 +110,10 @@ void R1_CanBus::cmd_VW(int16_t v_mm_s, int16_t w_mrad_s)
    _canCmd.data_1 = v_mm_s;
    _canCmd.data_2 = w_mrad_s;
    sendCommand(_canCmd);
+   // Serial.print("V : ");
+   // Serial.print(v_mm_s);
+   // Serial.print(", W : ");
+   // Serial.println(w_mrad_s);
 }
 void R1_CanBus::cmd_diffv(int16_t v_l_mm_s, int16_t v_r_mm_s)
 {
