@@ -4,6 +4,8 @@
 #include "r1_driver.h"
 #include <string.h>
 
+volatile int       _lineOut_timeOut_ms;
+
 int OMOROBOT_R1::get_target_speed()
 {
    return _target_speed;
@@ -369,6 +371,10 @@ void OMOROBOT_R1::spin() {
    #endif
       _100ms_loop_millis_last = millis();
    }
+}
+void OMOROBOT_R1::set_lineout_delay(int ms)
+{
+   _lineOut_timeOut_ms = ms;
 }
 /**
 *  @brief Process line position message from can bus

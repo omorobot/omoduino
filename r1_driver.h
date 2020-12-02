@@ -119,6 +119,7 @@ public:
    void     set_turning_speed(int V, int W);
    int      get_target_speed(void);
    void     set_speed(int V);
+   void     set_lineout_delay(int ms);
 
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
@@ -149,6 +150,7 @@ private:
    int                      _lineOut_timeOut_ms;
    int                      _target_speed;          // target speed when go flag is set
    int                      _resume_speed;          // target speed when paused
+
 
    uint8_t                 _turn_state;
    uint8_t                 _turn_timer_state;
