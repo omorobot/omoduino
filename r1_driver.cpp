@@ -280,6 +280,25 @@ void OMOROBOT_R1::spin() {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
+            if(_target_speed > 800){
+               if(_line_pos > 4.0||_line_pos < -4.0) {
+                  if(_line_pos > 5.0 || _line_pos < -5.0) {
+                     if(_line_pos > 6.0 || _line_pos < -6.0) {
+                        Controller.set_target_v(_target_speed - 450);
+                     } else {
+                        Controller.set_target_v(_target_speed - 300);
+                     }
+                  } else {
+                     Controller.set_target_v(_target_speed - 150);
+                  }
+               } else {
+                  Controller.set_target_v(_target_speed);
+               }
+            }
+         } else{
+            _goal_W = 0;
+         }
+            /*
             if(_goal_V > 300) {
                if(_line_pos > 4.0||_line_pos < -4.0) {
                   if(_line_pos > 5.0 || _line_pos < -5.0) {
@@ -297,10 +316,13 @@ void OMOROBOT_R1::spin() {
             } else {
                _goal_V_gain = 0;
             }
-         } else {
+         }
+          else {
             _goal_V_gain = 0;
             _goal_W = 0;
          }
+         */
+
          // if(this->m_turn_process) {
          //    this->m_turn_process;
          // }
@@ -317,7 +339,14 @@ void OMOROBOT_R1::spin() {
             CanBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);  
          } else {
             // For R1 send V and W
-            CanBus.cmd_VW((_goal_V+_goal_V_gain)*_v_dir, _goal_W*_w_dir);
+            if(this->_remote_mode == REMOTE_NONE){
+               //CanBus.cmd_VW((_goal_V+_goal_V_gain)*_v_dir, _goal_W*_w_dir);
+               CanBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
+            } 
+            // else if(_drive_mode == DRIVE_MODE_SBUS){
+            //    CanBus.cmd_VW(_goal_V_sbus*_v_dir, _goal_W_sbus*_w_dir);
+            // }
+               
          }
       }
       _10ms_loop_millis_last = millis();
@@ -340,7 +369,6 @@ void OMOROBOT_R1::spin() {
    #endif
       _100ms_loop_millis_last = millis();
    }
-  
 }
 /**
 *  @brief Process line position message from can bus
@@ -460,7 +488,13 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
 void OMOROBOT_R1::control_motor_VW(int V, int W) {
    V = V*_v_dir;
    W = W*_w_dir;
-   CanBus.cmd_VW(V, W);
+   if(this->_drive_mode == DRIVE_MODE_LINETRACER) {
+      if(this->_remote_mode != REMOTE_NONE) {
+         CanBus.cmd_VW(V, W);
+      }
+   } else {
+      CanBus.cmd_VW(V, W);
+   }
 }
 
 void OMOROBOT_R1::request_odo() {
@@ -491,6 +525,11 @@ void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
       _5ms_loop_millis_last = millis();
       _10ms_loop_millis_last = millis();
    }
+}
+
+void OMOROBOT_R1::set_driveMode_sbus(DRIVE_MODE mode)
+{
+   this->_remote_mode = mode;
 }
 /// Sets turning speed and rate of change of direction
 /// R1 type vehicle normally turns with V = 0 and W only;
@@ -648,10 +687,10 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
    else {                            //No line is found
       _isLineOut = true;
       line_pos = _line_pos_last*1.3;   //Set line position as last known line pos
-      if( (millis() - _lineDetect_millis_last) > 6000) {    //_lineOut_timeOut_ms is not working
+      if( (millis() - _lineDetect_millis_last) > 5000) {    //_lineOut_timeOut_ms is not working
          stop();
       }
    }
-   
+
    return line_pos;
 }
