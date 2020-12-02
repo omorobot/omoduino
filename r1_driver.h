@@ -98,7 +98,7 @@ public:
    int      get_odo_r();
    int      get_linePos();
    int      get_lineout_flag();
-   double      get_magnetic_linePos(struct can_frame mag_rx);
+   double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
    //int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
@@ -113,6 +113,7 @@ public:
    void     set_turning_speed(int V, int W);
    int      get_target_speed(void);
    void     set_speed(int V);
+   void     set_lineout_delay(int ms);
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
@@ -139,7 +140,7 @@ private:
    double                  _line_pos;   //was int8_t
    double                  _line_pos_last;
    int       _lineOut_timer;
-   int       _lineOut_timeOut_ms;
+   
    int       _target_speed;          // target speed when go flag is set
    int       _resume_speed;          // target speed when paused
 

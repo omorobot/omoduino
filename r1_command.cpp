@@ -149,12 +149,12 @@ int R1_CanBus::can_TxMsg_init(can_frame* frame, int id, int dlc)
    for(int i = 0; i<dlc; i++) {
       frame->data[i] = 0;
    }
-//#ifdef DEBUG_DRIVER    
+#ifdef DEBUG_DRIVER    
    Serial.print("Init: ID= 0x");
    Serial.print(frame->can_id, HEX);
    Serial.print(" DLC= ");
    Serial.print(frame->can_dlc);
    Serial.println();
-//#endif    
+#endif    
    return 0;
 }
