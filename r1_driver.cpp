@@ -595,7 +595,7 @@ void OMOROBOT_R1::stop()
    _turn_timer_state2 = 0;
    _go_flag = false;
    CanBus.set_pl_lift_mode(PL_LIFT_UP);
-   _lineOut_timeOut_ms = 0;
+   //_lineOut_timeOut_ms = 0;
 }
 /// Only reset target speed to 0 and wait for go()
 void     OMOROBOT_R1::pause()       {  
@@ -693,7 +693,7 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
    else {                            //No line is found
       _isLineOut = true;
       line_pos = _line_pos_last*1.3;   //Set line position as last known line pos
-      if( (millis() - _lineDetect_millis_last) > 5000) {    //_lineOut_timeOut_ms is not working
+      if( (millis() - _lineDetect_millis_last) > _lineOut_timeOut_ms) {    //_lineOut_timeOut_ms is not working
          stop();
       }
    }
