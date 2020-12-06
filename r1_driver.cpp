@@ -278,7 +278,7 @@ void OMOROBOT_R1::spin() {
          CanBus.request_odo(_odo_reset);
          _odoRequest_millis_last = millis();
    }
-   if(millis()-_10ms_loop_millis_last > 9) {
+   if(millis() >= _loop_control_next_millis) {//-_10ms_loop_millis_last > 9) {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
@@ -286,12 +286,12 @@ void OMOROBOT_R1::spin() {
                if(_line_pos > 4.0||_line_pos < -4.0) {
                   if(_line_pos > 5.0 || _line_pos < -5.0) {
                      if(_line_pos > 6.0 || _line_pos < -6.0) {
-                        Controller.set_target_v(_target_speed - 450);
+                        Controller.set_target_v(_target_speed - 350);
                      } else {
-                        Controller.set_target_v(_target_speed - 300);
+                        Controller.set_target_v(_target_speed - 200);
                      }
                   } else {
-                     Controller.set_target_v(_target_speed - 150);
+                     Controller.set_target_v(_target_speed - 100);
                   }
                } else {
                   Controller.set_target_v(_target_speed);
@@ -351,7 +351,8 @@ void OMOROBOT_R1::spin() {
                
          }
       }
-      _10ms_loop_millis_last = millis();
+      _loop_control_next_millis+=5;
+      //_10ms_loop_millis_last = millis();
    }
    if(millis() - _100ms_loop_millis_last > 99) {
       //Serial.print("Set_V:");
@@ -529,7 +530,8 @@ void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
       }
       
       _5ms_loop_millis_last = millis();
-      _10ms_loop_millis_last = millis();
+      _loop_control_next_millis = millis() + 5;
+      //_10ms_loop_millis_last = millis();
    }
 }
 
@@ -697,6 +699,9 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
          stop();
       }
    }
-
+   // Serial.print("Line\t");
+   // Serial.print(line_pos);
+   // Serial.print("\t");
+   // Serial.println((double)_goal_W/50.0);
    return line_pos;
 }

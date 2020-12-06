@@ -170,7 +170,7 @@ private:
    int                     _odo_r;
 
    uint64_t                _5ms_loop_millis_last;
-   uint64_t                _10ms_loop_millis_last;
+   uint64_t                _loop_control_next_millis;//_10ms_loop_millis_last;
    uint64_t                _100ms_loop_millis_last;
    bool                    _can_rx_extern = false;    //Can rx read performed externally
    uint8_t                 _tag_data_prev[4];
