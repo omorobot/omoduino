@@ -73,15 +73,18 @@ int   R1_Controller::speed_w_control(int origin_val, int target_val, int increas
 }
 int   R1_Controller::line_control_vw(double linePos)
 {
+   double dt = (double)(millis()-_pid_l.last_update_millis)/1000.0;
+   _pid_l.last_update_millis = millis();
    double error = linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
-   _pid_l.error_i += error;
-   double error_d = error - _pid_l.error_prev;
+   _pid_l.error_i += error * dt;
+   double error_d = (error - _pid_l.error_prev)/dt;
    _pid_l.error_prev = error;  
    if(_pid_l.error_i > _pid_l.error_i_max) _pid_l.error_i = _pid_l.error_i_max;
    else if(_pid_l.error_i < -_pid_l.error_i_max) _pid_l.error_i = -_pid_l.error_i_max;
    double output = _pid_l.Kp * error + _pid_l.error_i*_pid_l.Ki + error_d * _pid_l.Kd;
    if(output > _pid_l.out_max) output = _pid_l.out_max;
    else if(output < -_pid_l.out_max) output = -_pid_l.out_max;
+   
    return (int)output;
 }
 

@@ -278,11 +278,19 @@ void OMOROBOT_R1::spin() {
          CanBus.request_odo(_odo_reset);
          _odoRequest_millis_last = millis();
    }
-   if(millis() >= _loop_control_next_millis) {//-_10ms_loop_millis_last > 9) {
+   if(millis() >= _loop_control_next_millis) { //-_10ms_loop_millis_last > 9) {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
             if(_target_speed > 800){
+               if(_line_pos > LINE_EDGE_POS_L|| _line_pos < -LINE_EDGE_POS_L) {
+                  if(_line_pos > LINE_EDGE_POS_H || _line_pos < -LINE_EDGE_POS_H) {
+                     Controller.set_target_v(_target_speed - LINE_EDGE_SPEED);
+                  } else {
+                     Controller.set_target_v(_target_speed - (LINE_EDGE_SPEED-LINE_EDGE_SPEED*(LINE_EDGE_POS_H - abs(_line_pos))/(LINE_EDGE_POS_H-LINE_EDGE_POS_L)));
+                  }
+               }
+               /*
                if(_line_pos > 4.0||_line_pos < -4.0) {
                   if(_line_pos > 5.0 || _line_pos < -5.0) {
                      if(_line_pos > 6.0 || _line_pos < -6.0) {
@@ -295,39 +303,11 @@ void OMOROBOT_R1::spin() {
                   }
                } else {
                   Controller.set_target_v(_target_speed);
-               }
+               }*/
             }
          } else{
             _goal_W = 0;
          }
-            /*
-            if(_goal_V > 300) {
-               if(_line_pos > 4.0||_line_pos < -4.0) {
-                  if(_line_pos > 5.0 || _line_pos < -5.0) {
-                     if(_line_pos > 6.0 || _line_pos < -6.0) {
-                        _goal_V_gain = -450;
-                     } else {
-                        _goal_V_gain = -300;
-                     }
-                  } else {
-                     _goal_V_gain = -150;
-                  }
-               } else {
-                  _goal_V_gain = 0;
-               }
-            } else {
-               _goal_V_gain = 0;
-            }
-         }
-          else {
-            _goal_V_gain = 0;
-            _goal_W = 0;
-         }
-         */
-
-         // if(this->m_turn_process) {
-         //    this->m_turn_process;
-         // }
          if(_turn_timer_state>0) {
             this->turn_process_timer();
          }

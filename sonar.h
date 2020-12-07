@@ -27,7 +27,8 @@ public:
    int         measure_analog(void);
    bool        detected();
    void        set_range(int cm);
-   void        set_analogRange(int);
+   void        set_enable(bool);
+   //void        set_analogRange(int);
 private:
    SonarType   sonarType;
    int         _distance_prev;
@@ -35,6 +36,7 @@ private:
    int         _pin_echo;
    int         _pin_analog;
    bool        _detected;
+   bool        _enabled;
 };
 
 #endif

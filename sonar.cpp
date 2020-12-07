@@ -11,6 +11,7 @@ SONAR::SONAR(int analogPin)
    _pin_analog = analogPin;
    _distance_prev = 0;
    _detected = false;
+   _enabled = true;
 }
 
 SONAR::SONAR(int pin_trigger, int pin_echo) {
@@ -21,10 +22,15 @@ SONAR::SONAR(int pin_trigger, int pin_echo) {
    pinMode(_pin_echo,  INPUT);
    _distance_prev = 0;
    _detected = false;
+   _enabled = true;
 }
 
 double SONAR::measure_cm() {
    double distance;
+   if(!this->_enabled) {
+      _distance_prev = distance = -1.0;
+      return distance;
+   }
    if(sonarType == SONAR_TYPE_TRIGGER_ECHO) {
       digitalWrite(_pin_trigger, LOW);
       delayMicroseconds(2);
@@ -52,6 +58,9 @@ double SONAR::measure_cm() {
 
 
 bool SONAR::detected() {
+   if(!_enabled) {
+      return false;
+   }
    if(_distance_prev > 0.0) {
       if(_distance_prev < _detection_range) {
          _detected = true;
@@ -67,4 +76,8 @@ bool SONAR::detected() {
  * */
 void SONAR::set_range(int range) {
    _detection_range = range;
+}
+
+void SONAR::set_enable(bool en) {
+   _enabled = en;
 }

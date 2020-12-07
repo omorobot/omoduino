@@ -21,13 +21,14 @@
 #define V_CONTROL_ACCEL_DEFAULT        1
 
 typedef struct {
-   double   Kp;
-   double   Ki;
-   double   Kd;
-   double   error_prev;
-   double   error_i;
-   double   error_i_max;
-   double   out_max;
+   double      Kp;
+   double      Ki;
+   double      Kd;
+   double      error_prev;
+   double      error_i;
+   double      error_i_max;
+   double      out_max;
+   uint64_t    last_update_millis;
 }PID_Type;
 
 class R1_Controller {

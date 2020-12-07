@@ -19,6 +19,10 @@
 
 #define DEFAULT_TURN_W          180 //100
 
+#define LINE_EDGE_SPEED        400
+#define LINE_EDGE_POS_H          6.0
+#define LINE_EDGE_POS_L          4.0
+
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
 class MCP2515;
