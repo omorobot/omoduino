@@ -40,7 +40,7 @@ int   R1_Controller::speed_control(int cmd_v, bool go_flag)
       if(cmd_v < _v_target) {
          cmd_v+=_v_accel;
       } else if(cmd_v > _v_target) {
-         cmd_v-=_v_accel;
+         cmd_v-=_v_accel;   //Decelerate faster
       }
    } else {
       if(cmd_v > 1) {

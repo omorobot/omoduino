@@ -31,16 +31,30 @@ void OMOROBOT_R1::turn_process_odo(void)
       _odo_reset = true;
       if(_odo_l == 0) {   //Check odometry reset
          _turn_state = 3;
+         _odo_reset = false;
       }
       break;
    case 3:               //Now start to turn
+      _odo_reset = false;     //Keep odo data
       if(_turn_cmd == 0) {    //For right turn
          _goal_W = -_turning_W;
          _goal_V =  _turning_V;
       } else if(_turn_cmd == 1) { //For left turn
          _goal_W = _turning_W;
       }
+      _turn_state = 4;
       break;
+   case 4:                      
+      if(_odo_l > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+         _goal_W = 0;
+         _goal_V = 0;
+         _turn_state = 5;
+      }
+      break;
+   case 5:
+      _go_flag = true;
+      _turn_state = 0;
+   break;
    }
 }
 
@@ -290,20 +304,6 @@ void OMOROBOT_R1::spin() {
                      Controller.set_target_v(_target_speed - (LINE_EDGE_SPEED-LINE_EDGE_SPEED*(LINE_EDGE_POS_H - abs(_line_pos))/(LINE_EDGE_POS_H-LINE_EDGE_POS_L)));
                   }
                }
-               /*
-               if(_line_pos > 4.0||_line_pos < -4.0) {
-                  if(_line_pos > 5.0 || _line_pos < -5.0) {
-                     if(_line_pos > 6.0 || _line_pos < -6.0) {
-                        Controller.set_target_v(_target_speed - 350);
-                     } else {
-                        Controller.set_target_v(_target_speed - 200);
-                     }
-                  } else {
-                     Controller.set_target_v(_target_speed - 100);
-                  }
-               } else {
-                  Controller.set_target_v(_target_speed);
-               }*/
             }
          } else{
             _goal_W = 0;
@@ -555,7 +555,10 @@ void OMOROBOT_R1::set_pid_gains(PID_Type pid) {
 void OMOROBOT_R1::go(int target_speed)
 {
    if(target_speed) {
+      _lineOut_timer = 0;
      Controller.set_target_v(target_speed);
+     Serial.print("R1 GO:");
+     Serial.println(target_speed);
       _target_speed = target_speed;
       _resume_speed = target_speed;
    }
@@ -582,6 +585,7 @@ void OMOROBOT_R1::stop()
 /// Only reset target speed to 0 and wait for go()
 void     OMOROBOT_R1::pause()       {  
    _target_speed = 0; 
+   //Serial.println("R1 paused");
    Controller.set_target_v(_target_speed);
    }
 
@@ -679,9 +683,12 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
          stop();
       }
    }
+   
    // Serial.print("Line\t");
-   // Serial.print(line_pos);
-   // Serial.print("\t");
-   // Serial.println((double)_goal_W/50.0);
+   // if(_isLineOut) {
+   //    Serial.print("OUT ");
+   // }
+   // Serial.println(line_pos);
+   
    return line_pos;
 }
