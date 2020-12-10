@@ -19,7 +19,7 @@
 
 #define DEFAULT_TURN_W          180 //100
 
-#define LINE_EDGE_SPEED        400
+#define LINE_EDGE_SPEED        450
 #define LINE_EDGE_POS_H          6.0
 #define LINE_EDGE_POS_L          4.0
 
@@ -106,7 +106,7 @@ public:
    bool     get_go_flag();
    int      get_odo_l();
    int      get_odo_r();
-   int      get_linePos();
+   double   get_linePos();
    int      get_lineout_flag();
    double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();

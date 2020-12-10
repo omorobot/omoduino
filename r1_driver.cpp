@@ -592,7 +592,7 @@ void     OMOROBOT_R1::pause()       {
 bool     OMOROBOT_R1::get_go_flag() {  return _go_flag;}
 int      OMOROBOT_R1::get_odo_l()   {  return _odo_l;}
 int      OMOROBOT_R1::get_odo_r()   {  return _odo_r;}
-int      OMOROBOT_R1::get_linePos() {  return _line_pos;}
+double   OMOROBOT_R1::get_linePos() {  return _line_pos;}
 int      OMOROBOT_R1::get_lineout_flag() {return _isLineOut;}
 /// Initiate turn process to start with direction and turn odometry count from wheel
 /// Turn angle is determined by odometry count and dependent to wheel size
