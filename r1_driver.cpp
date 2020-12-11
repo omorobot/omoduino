@@ -568,6 +568,7 @@ void OMOROBOT_R1::go(int target_speed)
 /// If vehicle is stopped, calling this wouldn't start the vehicle
 void OMOROBOT_R1::go(void)
 {
+   _lineOut_timer = 0;
    _target_speed = _resume_speed;
    Controller.set_target_v(_target_speed);
    _go_flag = true;
