@@ -277,7 +277,14 @@ void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent){ _cbTagEvent = cbEvent;}
 * @brief R1 main loop
 */
 void OMOROBOT_R1::spin() {
-   
+#ifdef LINE_METHOD_2
+   if(millis() - _1ms_millis > 0){
+
+      _1ms_millis = millis();
+      _steer_timer++;
+   //   Serial.println(_steer_timer);
+   }
+#endif
    if(!_can_rx_extern) {
       CanBus.scan();
    }
@@ -295,6 +302,7 @@ void OMOROBOT_R1::spin() {
    if(millis() >= _loop_control_next_millis) { //-_10ms_loop_millis_last > 9) {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
+            #ifdef LINE_METHOD_0
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
             if(_target_speed > 800){
                if(_line_pos > LINE_EDGE_POS_L|| _line_pos < -LINE_EDGE_POS_L) {
@@ -305,6 +313,42 @@ void OMOROBOT_R1::spin() {
                   }
                }
             }
+            #elif defined LINE_METHOD_1
+            if(abs(_line_pos) < 2){
+               _goal_W = _line_pos * 15;
+            }
+            else if(abs(_line_pos) < 4){
+               _goal_W = _line_pos * 30;
+            }
+            else if(abs(_line_pos) < 6){
+               _goal_W = _line_pos * 50;
+            }
+            else{
+               _goal_W = _line_pos * 60;
+            }
+            #elif defined LINE_METHOD_2
+            _line_gain = 80;
+            _steer_gain = 100;
+
+            if(_steer_timer > 100){
+               _steer_timer = 0;
+
+               _line_pos_delta = _line_pos - _line_pos_bef;    //음수면 좌회전, 양수면 우회전
+               _line_pos_bef = _line_pos;
+               
+               _goal_W = (_line_pos_delta * _steer_gain) + (_line_pos * _line_gain);
+
+               if(_goal_W > 800){
+                  _goal_W = 800;
+               }
+               if(_goal_W < -800){
+                  _goal_W = -800;
+               }
+            }
+            #else
+            Error Undefined LINE_METHOD
+            #endif
+
          } else{
             _goal_W = 0;
          }
@@ -670,7 +714,7 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
       for(int j = 0; j<setCount; j++) {
          line_pos+=detectArr[j];
       }
-      line_pos = line_pos / setCount - 7.5;
+      line_pos = line_pos / setCount - 7;
       line_pos = line_pos * gain;
       _line_pos_last = line_pos;       //Remember last known line pos 
       _isLineOut = false;

@@ -23,6 +23,8 @@
 #define LINE_EDGE_POS_H          6.0
 #define LINE_EDGE_POS_L          4.0
 
+#define LINE_METHOD_2
+
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
 class MCP2515;
@@ -150,10 +152,24 @@ private:
 
    double                  _line_pos;               //was int8_t
    double                  _line_pos_last;
+#ifdef LINE_METHOD_2
+      // yoon
+   int                     _steer_left_flag;
+   int                     _steer_right_flag;
+   int                     _steer_flag;
+   int                     _steer_dir;             //1: cw, -1:ccw
+   double                  _line_pos_bef;
+   double                  _line_pos_delta;    
+   int                     _line_pos_dir;
+   double                  _steer_gain;
+   double                  _line_gain;
+   uint64_t                _1ms_millis;
+   int                     _steer_timer;
+#endif
    int                     _lineOut_timer;
-   int                      _lineOut_timeOut_ms;
-   int                      _target_speed;          // target speed when go flag is set
-   int                      _resume_speed;          // target speed when paused
+   int                     _lineOut_timeOut_ms;
+   int                     _target_speed;          // target speed when go flag is set
+   int                     _resume_speed;          // target speed when paused
 
 
    uint8_t                 _turn_state;
