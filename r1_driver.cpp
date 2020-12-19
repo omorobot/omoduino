@@ -624,7 +624,7 @@ void OMOROBOT_R1::stop()
    _turn_timer_state = 0;
    _turn_timer_state2 = 0;
    _go_flag = false;
-   CanBus.set_pl_lift_mode(PL_LIFT_UP);
+   //CanBus.set_pl_lift_mode(PL_LIFT_UP);
    //_lineOut_timeOut_ms = 0;
 }
 /// Only reset target speed to 0 and wait for go()
