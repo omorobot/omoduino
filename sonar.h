@@ -16,18 +16,27 @@
 
 class SONAR
 {
+   typedef enum {
+      SONAR_TYPE_TRIGGER_ECHO = 0,        //Sonar type is trigger, echo type
+      SONAR_TYPE_ANALOG       = 1         //Sonar type is analog
+   }SonarType;
 public:
+   SONAR(int analogPin);
    SONAR(int pin_trigger, int pin_echo);
-   double  measure_cm(void);
-   void    set_detection_range(double cm);
-   bool    detected();
-   void    set_range(double cm);
-private:
+   double      measure_cm(void);
+   int         measure_analog(void);
 
-   double _measure_prev;
-   int _pin_trigger;
-   int _pin_echo;
-   bool _detected;
+   bool        detected();
+   void        set_range(int cm);
+   void        set_enable(bool);
+private:
+   SonarType   sonarType;
+   int         _distance_prev;
+   int         _pin_trigger;
+   int         _pin_echo;
+   int         _pin_analog;
+   bool        _detected;
+   bool        _enabled;
 };
 
 #endif

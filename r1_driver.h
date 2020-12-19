@@ -27,6 +27,11 @@ enum DRIVE_MODE{
     DRIVE_MODE_DEFAULT,
     DRIVE_MODE_LINETRACER        ///Set to line tracer mode when Line sensor available
 };
+enum REMOTE_MODE{
+   REMOTE_NONE,
+   REMOTE_SBUS,
+   REMOTE_JOY
+};
 enum DRIVE_DIRECTION{
     DIRECTION_FORWARD,
     DIRECTION_REVERSE
@@ -52,13 +57,13 @@ enum TAG_Type{
     TAG_TURN                = 0xB0,     //176
     TAG_LIFT                = 0xB1,     //177
     TAG_TURN_PL             = 0xB2,     //178
-    TAG_LOAD_UNLOAD_STOP    = 0xB3, //179
-    TAG_TURN_PL2            = 0xB4, //180
+    TAG_LOAD_UNLOAD_STOP    = 0xB3,     //179
+    TAG_TURN_PL2            = 0xB4,     //180
     TAG_CIN                 = 0xC1,     //193
-    TAG_COUT                = 0xC0,      //192
+    TAG_COUT                = 0xC0,     //192
     TAG_SPEED               = 0xE0,     //224
     TAG_SONAR               = 0xE2,     //226
-    TAG_READY               = 0xFE     //254
+    TAG_READY               = 0xFE      //254
 };
 
 typedef struct Tag_Struct{
@@ -68,7 +73,7 @@ typedef struct Tag_Struct{
 
 class OMOROBOT_R1
 {
-   typedef int (R1_Controller::*m_line_control_event)(int);
+   typedef int (R1_Controller::*m_line_control_event)(double);
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
     
@@ -85,6 +90,7 @@ public:
    void     control_motor_VW(int V, int W);
    void     request_odo();
    void     set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode);
+   void     set_remoteMode(REMOTE_MODE mode);
    void     set_lineoutTime(int ms);
    void     new_can_line(struct can_frame can_rx);
    void     new_can_odo(struct can_frame can_rx);
@@ -95,7 +101,9 @@ public:
    bool     get_go_flag();
    int      get_odo_l();
    int      get_odo_r();
-   int8_t   get_linePos();
+   double   get_linePos();
+   int      get_lineout_flag();
+   double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
    //int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
@@ -108,6 +116,9 @@ public:
    void     set_v_accel(uint16_t accel);
    void     set_pid_gains(PID_Type pid);
    void     set_turning_speed(int V, int W);
+   int      get_target_speed(void);
+   void     set_speed(int V);
+   void     set_lineout_delay(int ms);
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
@@ -126,11 +137,14 @@ private:
    bool                    _go_flag;
    int                     _cmd_speed;
    int                     _goal_V;
+   int                     _goal_V_gain;
    int                     _goal_W;
    int                     _v_dir;
    int                     _w_dir;
 
-   int8_t                  _line_pos;
+   double                  _line_pos;
+   double                  _line_pos_last;
+
    int       _lineOut_timer;
    int       _lineOut_timeOut_ms;
    int       _target_speed;          // target speed when go flag is set
@@ -154,14 +168,15 @@ private:
    int                     _odo_r;
 
    uint64_t                _5ms_loop_millis_last;
-   uint64_t                _10ms_loop_millis_last;
+   uint64_t                _loop_control_next_millis;//_10ms_loop_millis_last;
+
    uint64_t                _100ms_loop_millis_last;
    bool                    _can_rx_extern = false;             //Can rx read performed externally
    uint8_t                 _tag_data_prev[4];
    uint16_t                _same_tag_reset_timer;
    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
    struct can_frame _canRxMsg;
-
+   REMOTE_MODE             _remote_mode;
    void newCanRxEvent(can_frame can_rx);
    void turn_process_odo(void);
    void turn_process_timer(void);

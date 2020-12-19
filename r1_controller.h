@@ -17,17 +17,18 @@
 #define PID_LINE_KD_DEFAULT            0.0
 #define PID_LINE_ERROR_I_MAX_DEFAULT   250.0
 #define PID_LINE_OUT_MAX_DEFAULT       180.0
-#define PID_LINE_FILTER_ALPHA_DEFAULT  0.8
+#define PID_LINE_FILTER_ALPHA_DEFAULT  0.95 //was 0.8
 #define V_CONTROL_ACCEL_DEFAULT        1
 
 typedef struct {
-   double   Kp;
-   double   Ki;
-   double   Kd;
-   double   error_prev;
-   double   error_i;
-   double   error_i_max;
-   double   out_max;
+   double      Kp;
+   double      Ki;
+   double      Kd;
+   double      error_prev;
+   double      error_i;
+   double      error_i_max;
+   double      out_max;
+   uint64_t    last_update_millis;
 }PID_Type;
 
 class R1_Controller {
@@ -35,9 +36,10 @@ public:
    R1_Controller();
    void     set_target_v(int v);
    void     set_v_accel(int accel);
+   int      speed_w_control(int origin_val, int target_val, int increase);
    int      speed_control(int cmd_v, bool go_flag);
-   int      line_control_vw(int linePos);
-   int      line_control_angle(int linePos);
+   int      line_control_vw(double linePos);
+   int      line_control_angle(double linePos);
    void     set_pid_gain_line(PID_Type);
    void     reset_pid_line(void);
 private:

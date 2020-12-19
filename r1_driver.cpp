@@ -2,7 +2,18 @@
 #include <SPI.h>
 #include <mcp2515.h>
 #include "r1_driver.h"
+#include <string.h>
 
+volatile int       _lineOut_timeOut_ms;
+
+int OMOROBOT_R1::get_target_speed()
+{
+   return _target_speed;
+}
+void OMOROBOT_R1::set_speed(int V)
+{
+   _target_speed = V;
+}
 
 void OMOROBOT_R1::turn_process_odo(void)
 {
@@ -20,16 +31,30 @@ void OMOROBOT_R1::turn_process_odo(void)
       _odo_reset = true;
       if(_odo_l == 0) {   //Check odometry reset
          _turn_state = 3;
+         _odo_reset = false;
       }
       break;
    case 3:               //Now start to turn
+      _odo_reset = false;     //Keep odo data
       if(_turn_cmd == 0) {    //For right turn
          _goal_W = -_turning_W;
          _goal_V =  _turning_V;
       } else if(_turn_cmd == 1) { //For left turn
          _goal_W = _turning_W;
       }
+      _turn_state = 4;
       break;
+   case 4:                      
+      if(_odo_l > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+         _goal_W = 0;
+         _goal_V = 0;
+         _turn_state = 5;
+      }
+      break;
+   case 5:
+      _go_flag = true;
+      _turn_state = 0;
+   break;
    }
 }
 
@@ -237,6 +262,7 @@ void OMOROBOT_R1::begin() {
    _target_speed = 0;
    _goal_V = 0;
    _goal_W = 0;
+   _goal_V_gain = 0;
    _cmd_speed = 0;
    _isLineOut = false;
    _lineOut_timeOut_ms = 0;
@@ -265,7 +291,7 @@ void OMOROBOT_R1::spin() {
          CanBus.request_odo(_odo_reset);
          _odoRequest_millis_last = millis();
    }
-   if(millis()-_10ms_loop_millis_last > 9) {
+   if(millis() >= _loop_control_next_millis) { //-_10ms_loop_millis_last > 9) {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
@@ -288,10 +314,14 @@ void OMOROBOT_R1::spin() {
             CanBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);  
          } else {
             // For R1 send V and W
+            if(this->_remote_mode == REMOTE_NONE){
+               //CanBus.cmd_VW((_goal_V+_goal_V_gain)*_v_dir, _goal_W*_w_dir);
             CanBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
+            }
          }
       }
-      _10ms_loop_millis_last = millis();
+      _loop_control_next_millis+=5;
+      //_10ms_loop_millis_last = millis();
    }
    if(millis() - _100ms_loop_millis_last > 99) {
    #ifdef SAME_TAG_REFRESH_EN
@@ -309,7 +339,10 @@ void OMOROBOT_R1::spin() {
    #endif
       _100ms_loop_millis_last = millis();
    }
-  
+}
+void OMOROBOT_R1::set_lineout_delay(int ms)
+{
+   _lineOut_timeOut_ms = ms;
 }
 /**
 *  @brief Process line position message from can bus
@@ -321,7 +354,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
    switch(can_rx.data[0]) {
    case 1:   //Line detect
       _isLineOut = false;
-      _line_pos = (int8_t)can_rx.data[1];
+      _line_pos = (double)can_rx.data[1];
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
       for(i =0; i<4; i++) {
@@ -349,6 +382,11 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       }
       _cbDataEvent(R1MSG_LINEOUT);
       break;
+   case 3:  //magnetic line
+      _line_pos = get_magnetic_linePos(can_rx);
+      //Serial.print("Line : ");
+      //Serial.println(_line_pos);
+      break;
    }
 }
 /**
@@ -368,7 +406,7 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
       switch(_canRxMsg.data[0]) {
       case 1:   //Line detect
          _isLineOut = false;
-         _line_pos = (int8_t)_canRxMsg.data[1];
+         _line_pos = (double)_canRxMsg.data[1]; //was int8_t
          _lineDetect_millis_last = millis();    //Update line detection time
          _lineOut_timer = 0;
          _cbDataEvent(R1MSG_LINEPOS);
@@ -397,7 +435,13 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
 void OMOROBOT_R1::control_motor_VW(int V, int W) {
    V = V*_v_dir;
    W = W*_w_dir;
-   CanBus.cmd_VW(V, W);
+   if(this->_drive_mode == DRIVE_MODE_LINETRACER) {
+      if(this->_remote_mode != REMOTE_NONE) {
+         CanBus.cmd_VW(V, W);
+      }
+   } else {
+      CanBus.cmd_VW(V, W);
+   }
 }
 
 void OMOROBOT_R1::request_odo() {
@@ -426,8 +470,14 @@ void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
       }
       
       _5ms_loop_millis_last = millis();
-      _10ms_loop_millis_last = millis();
+      _loop_control_next_millis = millis() + 5;
+      //_10ms_loop_millis_last = millis();
    }
+}
+
+void OMOROBOT_R1::set_remoteMode(REMOTE_MODE mode)
+{
+   this->_remote_mode = mode;
 }
 /// Sets turning speed and rate of change of direction
 /// R1 type vehicle normally turns with V = 0 and W only;
@@ -465,7 +515,10 @@ void OMOROBOT_R1::set_pid_gains(PID_Type pid) {
 void OMOROBOT_R1::go(int target_speed)
 {
    if(target_speed) {
-     Controller.set_target_v(target_speed);
+      _lineOut_timer = 0;
+      Controller.set_target_v(target_speed);
+      Serial.print("R1 GO:");
+      Serial.println(target_speed);
       _target_speed = target_speed;
       _resume_speed = target_speed;
    }
@@ -475,6 +528,7 @@ void OMOROBOT_R1::go(int target_speed)
 /// If vehicle is stopped, calling this wouldn't start the vehicle
 void OMOROBOT_R1::go(void)
 {
+   _lineOut_timer = 0;
    _target_speed = _resume_speed;
    Controller.set_target_v(_target_speed);
    _go_flag = true;
@@ -486,15 +540,21 @@ void OMOROBOT_R1::stop()
    _turn_timer_state = 0;
    _turn_timer_state2 = 0;
    _go_flag = false;
-   CanBus.set_pl_lift_mode(PL_LIFT_UP);
+   //CanBus.set_pl_lift_mode(PL_LIFT_UP);
+   //_lineOut_timeOut_ms = 0;
 }
 /// Only reset target speed to 0 and wait for go()
-void     OMOROBOT_R1::pause()       {  _target_speed = 0; }
+void     OMOROBOT_R1::pause()       {  
+   _target_speed = 0; 
+   //Serial.println("R1 paused");
+   Controller.set_target_v(_target_speed);
+}
 
 bool     OMOROBOT_R1::get_go_flag() {  return _go_flag;}
 int      OMOROBOT_R1::get_odo_l()   {  return _odo_l;}
 int      OMOROBOT_R1::get_odo_r()   {  return _odo_r;}
-int8_t   OMOROBOT_R1::get_linePos() {  return _line_pos;}
+double   OMOROBOT_R1::get_linePos() {  return _line_pos;}
+int      OMOROBOT_R1::get_lineout_flag() {return _isLineOut;}
 /// Initiate turn process to start with direction and turn odometry count from wheel
 /// Turn angle is determined by odometry count and dependent to wheel size
 void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
@@ -544,4 +604,52 @@ void OMOROBOT_R1::start_turn_timer2(TURN_DIRECTION dir, int speed, int time)
 void OMOROBOT_R1::set_load_unload_stop()
 {
    _is_load_unload_finished = true;
+}
+/**
+ * @brief Try to find center position of the magnetic line from binary data 
+ * Example: [0][0][0][1][1][1][0][0][0][0][0][0][0][0][0]
+ * Add set position: 3+4+5 = 12
+ * Divide by 3 = 4
+ * Substract center position 4 - 7.5 = -3.5
+ **/
+double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
+{
+   double line_pos = 0.0;
+   uint16_t magnetic_data = ((mag_rx.data[6] << 8) & 0xFF00) | (mag_rx.data[7] & 0x00FF);    //Binary data[6][7] contains 1:detected, 0:undetected
+   uint8_t detectArr[15];
+   uint8_t setCount = 0;         //Stores consecutive number set in magnetic data
+   // Scan line data from 1 to 16 
+   for(int i = 1; i<16; i++) {
+      if((magnetic_data>>i)&0x01) {
+         detectArr[setCount] = i-1;
+         setCount++;
+      }
+   }
+   double gain = 1.3;
+   if( setCount>0 ) {
+      for(int j = 0; j<setCount; j++) {
+         line_pos+=detectArr[j];
+      }
+      line_pos = line_pos / setCount - 7;
+      line_pos = line_pos * gain;
+      _line_pos_last = line_pos;       //Remember last known line pos 
+      _isLineOut = false;
+      _lineDetect_millis_last = millis();    //Update line detection time
+      _lineOut_timer = 0;
+   } 
+   else {                            //No line is found
+      _isLineOut = true;
+      line_pos = _line_pos_last*1.3;   //Set line position as last known line pos
+      if( (millis() - _lineDetect_millis_last) > _lineOut_timeOut_ms) {    //_lineOut_timeOut_ms is not working
+         stop();
+      }
+   }
+   
+   // Serial.print("Line\t");
+   // if(_isLineOut) {
+   //    Serial.print("OUT ");
+   // }
+   // Serial.println(line_pos);
+   
+   return line_pos;
 }

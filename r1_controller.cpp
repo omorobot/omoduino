@@ -40,7 +40,7 @@ int   R1_Controller::speed_control(int cmd_v, bool go_flag)
       if(cmd_v < _v_target) {
          cmd_v+=_v_accel;
       } else if(cmd_v > _v_target) {
-         cmd_v-=_v_accel;
+         cmd_v-=_v_accel;   //Decelerate faster
       }
    } else {
       if(cmd_v > 1) {
@@ -54,23 +54,43 @@ int   R1_Controller::speed_control(int cmd_v, bool go_flag)
    return cmd_v;
 }
 
-int   R1_Controller::line_control_vw(int linePos)
+int   R1_Controller::speed_w_control(int origin_val, int target_val, int increase)
 {
-   double error = (double)linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
-   _pid_l.error_i += error;
-   double error_d = error - _pid_l.error_prev;
+   if(target_val > origin_val){
+      if(target_val > (origin_val + increase)){
+         return origin_val + increase;
+      } else{
+         return target_val;
+      }
+   } else{
+      if(target_val < (origin_val - increase)){
+         return origin_val - increase;
+      }else{
+         return target_val;
+      }
+   }
+
+}
+int   R1_Controller::line_control_vw(double linePos)
+{
+   double dt = (double)(millis()-_pid_l.last_update_millis)/1000.0;
+   _pid_l.last_update_millis = millis();
+   double error = linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
+   _pid_l.error_i += error * dt;
+   double error_d = (error - _pid_l.error_prev)/dt;
    _pid_l.error_prev = error;  
    if(_pid_l.error_i > _pid_l.error_i_max) _pid_l.error_i = _pid_l.error_i_max;
    else if(_pid_l.error_i < -_pid_l.error_i_max) _pid_l.error_i = -_pid_l.error_i_max;
    double output = _pid_l.Kp * error + _pid_l.error_i*_pid_l.Ki + error_d * _pid_l.Kd;
    if(output > _pid_l.out_max) output = _pid_l.out_max;
    else if(output < -_pid_l.out_max) output = -_pid_l.out_max;
+
    return (int)output;
 }
 
-int   R1_Controller::line_control_angle(int linePos)
+int   R1_Controller::line_control_angle(double linePos)
 {
-   double error = (double)linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
+   double error = linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;
    _pid_l.error_i += error;
    double error_d = error - _pid_l.error_prev;
    _pid_l.error_prev = error;  
