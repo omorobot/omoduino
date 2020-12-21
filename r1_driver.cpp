@@ -25,6 +25,7 @@ void OMOROBOT_R1::turn_process_odo(void)
       break;
    case 1:   //Stop the vehicle
       _go_flag = false;
+      _goal_W = 0;
       if(_cmd_speed == 0) {
          Serial.println("TURN STOP");
          _turn_state = 2;
@@ -40,7 +41,7 @@ void OMOROBOT_R1::turn_process_odo(void)
       }
       break;
    case 3:
-      if(turn_wait_timer++ > 200) {
+      if(turn_wait_timer++ > 100) {
          _turn_state = 4;
          Serial.println("TURN Start");
       }
@@ -69,7 +70,7 @@ void OMOROBOT_R1::turn_process_odo(void)
       }
       break;
    case 6:
-      if(turn_wait_timer++> 200) {
+      if(turn_wait_timer++> 100) {
          _turn_state = 7;
       }
       break;
