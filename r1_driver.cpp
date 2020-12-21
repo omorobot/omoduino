@@ -5,6 +5,8 @@
 #include <string.h>
 
 volatile int       _lineOut_timeOut_ms;
+volatile uint8_t   _tag_data_prev[4];
+int turn_wait_timer = 0;
 
 int OMOROBOT_R1::get_target_speed()
 {
@@ -24,34 +26,54 @@ void OMOROBOT_R1::turn_process_odo(void)
    case 1:   //Stop the vehicle
       _go_flag = false;
       if(_cmd_speed == 0) {
+         Serial.println("TURN STOP");
          _turn_state = 2;
       }
       break;
    case 2:
       _odo_reset = true;
-      if(_odo_l == 0) {   //Check odometry reset
+      if(_odo_l < 10) {   //Check odometry reset
+         Serial.println("TURN ODO RESET");
          _turn_state = 3;
          _odo_reset = false;
+         turn_wait_timer = 0;
       }
       break;
-   case 3:               //Now start to turn
-      _odo_reset = false;     //Keep odo data
+   case 3:
+      if(turn_wait_timer++ > 200) {
+         _turn_state = 4;
+         Serial.println("TURN Start");
+      }
+   break;
+   case 4:               //Now start to turn
+      Serial.print("Turn W:");
+      Serial.println(_turning_W);
       if(_turn_cmd == 0) {    //For right turn
-         _goal_W = -_turning_W;
-         _goal_V =  _turning_V;
-      } else if(_turn_cmd == 1) { //For left turn
          _goal_W = _turning_W;
+         _goal_V =  0;
+      } else if(_turn_cmd == 1) { //For left turn
+         _goal_W = -_turning_W;
+         _goal_V = 0;
       }
-      _turn_state = 4;
+      _turn_state = 5;
       break;
-   case 4:                      
-      if(_odo_l > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+   case 5:                     
+      Serial.print("ODO L:");
+      Serial.println(_odo_l); 
+      if(abs(_odo_l) > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+         Serial.println("TURN ODO met GOAL");
          _goal_W = 0;
          _goal_V = 0;
-         _turn_state = 5;
+         _turn_state = 6;
+         turn_wait_timer = 0;
       }
       break;
-   case 5:
+   case 6:
+      if(turn_wait_timer++> 200) {
+         _turn_state = 7;
+      }
+      break;
+   case 7:
       _go_flag = true;
       _turn_state = 0;
    break;
@@ -288,25 +310,25 @@ void OMOROBOT_R1::spin() {
       _5ms_loop_millis_last = millis();
    }
    if(millis()-_odoRequest_millis_last > 9) {
-         CanBus.request_odo(_odo_reset);
-         _odoRequest_millis_last = millis();
+      CanBus.request_odo(_odo_reset);
+      if(_turn_timer_state>0) {
+         this->turn_process_timer();
+      }
+      if(_turn_state > 0) {
+         this->turn_process_odo();
+      }
+      _odoRequest_millis_last = millis();
+
    }
    if(millis() >= _loop_control_next_millis) { //-_10ms_loop_millis_last > 9) {
       if(this->m_10ms_line_control) {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
          } else {
-            _goal_W = 0;
-         }
-         // if(this->m_turn_process) {
-         //    this->m_turn_process;
-         // }
-         if(_turn_timer_state>0) {
-            this->turn_process_timer();
-         }
-         if(_turn_state > 0) {
-            this->turn_process_odo();
-         }
+            if(_turn_state == 0) {
+               _goal_W = 0;
+            }
+         } 
          if(_turn_timer_state2 > 0) {
             this->turn_process_timer2();
          }
@@ -316,7 +338,7 @@ void OMOROBOT_R1::spin() {
             // For R1 send V and W
             if(this->_remote_mode == REMOTE_NONE){
                //CanBus.cmd_VW((_goal_V+_goal_V_gain)*_v_dir, _goal_W*_w_dir);
-            CanBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
+               CanBus.cmd_VW(_goal_V*_v_dir, _goal_W*_w_dir);
             }
          }
       }
@@ -351,27 +373,31 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
    uint8_t tag_diff_cnt = 0;
    int i;
+   int8_t lineRaw = 0;
+   uint8_t tag_data[4];
    switch(can_rx.data[0]) {
    case 1:   //Line detect
+   {
       _isLineOut = false;
-      _line_pos = (double)can_rx.data[1];
+      lineRaw = (int8_t)can_rx.data[1];
+      _line_pos = (double)lineRaw;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
-      for(i =0; i<4; i++) {
-         if(_tag_data_prev[i]!=can_rx.data[4+i]) {
-            tag_diff_cnt++;
-         }
-      }
-      if(tag_diff_cnt>0) {    //New tag data is read!
+
+      tag_data[0] = can_rx.data[4];
+      tag_data[1] = can_rx.data[5];
+      tag_data[2] = can_rx.data[6];
+      tag_data[3] = can_rx.data[7];
+
+      if(memcmp(_tag_data_prev, tag_data, 4)!=0) {      //Not the same tag data
          _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[4];
          _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[5];
          _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[6];
          _tag_data_prev[3] = _new_tagStr.bytes[3] = can_rx.data[7];
          _new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
          _cbTagEvent(_new_tagStr);
-      } else {
-         _same_tag_reset_timer = 2500;
       }
+   }
       break;
    case 2:   //No line
       _isLineOut = true;
@@ -396,6 +422,9 @@ void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
 {
    _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
    _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
+   // Serial.print("ODO:");
+   // Serial.print(_odo_r);Serial.print(",");
+   // Serial.print(_odo_l);Serial.println(",");
 }
 
 void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
@@ -540,6 +569,7 @@ void OMOROBOT_R1::stop()
    _turn_timer_state = 0;
    _turn_timer_state2 = 0;
    _go_flag = false;
+   _turn_state = 0;
    //CanBus.set_pl_lift_mode(PL_LIFT_UP);
    //_lineOut_timeOut_ms = 0;
 }

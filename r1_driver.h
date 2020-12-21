@@ -53,8 +53,8 @@ enum TAG_Type{
     TAG_None                = 0,
     TAG_DEPOT               = 0xA0,     //160
     TAG_POU                 = 0xA2,     //162
-    TAG_APPROACH            = 0xAA,     //170
-    TAG_TURN                = 0xB0,     //176
+    TAG_APPROACH            = 0xA3,     //163
+    TAG_UTURN               = 0xB0,     //176
     TAG_LIFT                = 0xB1,     //177
     TAG_TURN_PL             = 0xB2,     //178
     TAG_LOAD_UNLOAD_STOP    = 0xB3,     //179
@@ -154,7 +154,7 @@ private:
    uint8_t                 _turn_timer_state;
    uint8_t                 _turn_timer_state2;
    uint8_t                 _turn_cmd;
-   uint16_t                _turn_odo_cnt;
+   int                      _turn_odo_cnt;
    int16_t                 _turning_W;
    int16_t                 _turning_V;
    uint16_t                _turn_timer_set;
@@ -172,7 +172,7 @@ private:
 
    uint64_t                _100ms_loop_millis_last;
    bool                    _can_rx_extern = false;             //Can rx read performed externally
-   uint8_t                 _tag_data_prev[4];
+   
    uint16_t                _same_tag_reset_timer;
    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
    struct can_frame _canRxMsg;

@@ -25,7 +25,7 @@ public:
    SONAR(int pin_trigger, int pin_echo);
    double      measure_cm(void);
    int         measure_analog(void);
-
+   double      distance_cm;
    bool        detected();
    void        set_range(int cm);
    void        set_enable(bool);
