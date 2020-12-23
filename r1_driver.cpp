@@ -16,7 +16,9 @@ void OMOROBOT_R1::set_speed(int V)
 {
    _target_speed = V;
 }
-
+/**
+ * @brief Turn process with odometry count (More precise)
+ * */
 void OMOROBOT_R1::turn_process_odo(void)
 {
    switch(_turn_state){
@@ -27,28 +29,25 @@ void OMOROBOT_R1::turn_process_odo(void)
       _go_flag = false;
       _goal_W = 0;
       if(_cmd_speed == 0) {
-         Serial.println("TURN STOP");
+         _odo_reset = true;
          _turn_state = 2;
       }
       break;
    case 2:
-      _odo_reset = true;
-      if(_odo_l < 10) {   //Check odometry reset
-         Serial.println("TURN ODO RESET");
-         _turn_state = 3;
+      if(abs(_odo_l) < 10) {   //Check odometry reset
          _odo_reset = false;
          turn_wait_timer = 0;
+         _turn_state = 3;
       }
       break;
    case 3:
+      _goal_W = 0;
       if(turn_wait_timer++ > 100) {
          _turn_state = 4;
          Serial.println("TURN Start");
       }
    break;
    case 4:               //Now start to turn
-      Serial.print("Turn W:");
-      Serial.println(_turning_W);
       if(_turn_cmd == 0) {    //For right turn
          _goal_W = _turning_W;
          _goal_V =  0;
@@ -59,8 +58,8 @@ void OMOROBOT_R1::turn_process_odo(void)
       _turn_state = 5;
       break;
    case 5:                     
-      Serial.print("ODO L:");
-      Serial.println(_odo_l); 
+      // Serial.print("ODO L:");
+      // Serial.println(_odo_l); 
       if(abs(_odo_l) > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
          Serial.println("TURN ODO met GOAL");
          _goal_W = 0;
