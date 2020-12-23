@@ -32,6 +32,7 @@ public:
 private:
    SonarType   sonarType;
    int         _distance_prev;
+   int         _distance_arr[10];
    int         _pin_trigger;
    int         _pin_echo;
    int         _pin_analog;

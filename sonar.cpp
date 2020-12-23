@@ -49,8 +49,16 @@ double SONAR::measure_cm() {
          return distance;
       }
    } else if(sonarType == SONAR_TYPE_ANALOG) {
-      distance = (double)analogRead(_pin_analog) * _analog_to_cm_gain;
-      distance = distance * _alpha + (double)_distance_prev*(1.0-_alpha);
+      int sum = 0;
+      for(int i=0; i<9;i++){
+         _distance_arr[i] = _distance_arr[i+1];
+         sum += _distance_arr[i];
+      }
+      _distance_arr[9] = analogRead(_pin_analog) * _analog_to_cm_gain;
+      sum += _distance_arr[9];
+      distance = sum /10.0;
+      //distance = (double)analogRead(_pin_analog) * _analog_to_cm_gain;
+      //distance = distance * _alpha + (double)_distance_prev*(1.0-_alpha);
       _distance_prev = (int)distance;
       return distance;
    }
