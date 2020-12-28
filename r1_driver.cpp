@@ -5,6 +5,8 @@
 #include <string.h>
 
 volatile int       _lineOut_timeOut_ms;
+volatile bool        _stopped_by_lineout = false;
+int turn_wait_timer = 0;
 
 int OMOROBOT_R1::get_target_speed()
 {
@@ -23,35 +25,53 @@ void OMOROBOT_R1::turn_process_odo(void)
       break;
    case 1:   //Stop the vehicle
       _go_flag = false;
+      _goal_W = 0;
       if(_cmd_speed == 0) {
+         _odo_reset = true;
          _turn_state = 2;
       }
       break;
    case 2:
-      _odo_reset = true;
-      if(_odo_l == 0) {   //Check odometry reset
-         _turn_state = 3;
+      if(abs(_odo_l) < 10) {   //Check odometry reset
          _odo_reset = false;
+         turn_wait_timer = 0;
+         _turn_state = 3;
       }
       break;
-   case 3:               //Now start to turn
-      _odo_reset = false;     //Keep odo data
+case 3:
+      _goal_W = 0;
+      if(turn_wait_timer++ > 100) {
+         _turn_state = 4;
+         Serial.println("TURN Start");
+      }
+   break;
+   case 4:               //Now start to turn
       if(_turn_cmd == 0) {    //For right turn
-         _goal_W = -_turning_W;
-         _goal_V =  _turning_V;
-      } else if(_turn_cmd == 1) { //For left turn
          _goal_W = _turning_W;
+         _goal_V =  0;
+      } else if(_turn_cmd == 1) { //For left turn
+         _goal_W = -_turning_W;
+         _goal_V = 0;
       }
-      _turn_state = 4;
+      _turn_state = 5;
       break;
-   case 4:                      
-      if(_odo_l > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+   case 5:                     
+      // Serial.print("ODO L:");
+      // Serial.println(_odo_l); 
+      if(abs(_odo_l) > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+         Serial.println("TURN ODO met GOAL");
          _goal_W = 0;
          _goal_V = 0;
-         _turn_state = 5;
+         _turn_state = 6;
+         turn_wait_timer = 0;
       }
       break;
-   case 5:
+   case 6:
+      if(turn_wait_timer++> 100) {
+         _turn_state = 7;
+      }
+      break;
+   case 7:
       _go_flag = true;
       _turn_state = 0;
    break;
@@ -297,6 +317,12 @@ void OMOROBOT_R1::spin() {
    }
    if(millis()-_odoRequest_millis_last > 9) {
          CanBus.request_odo(_odo_reset);
+         if(_turn_timer_state>0) {
+            this->turn_process_timer();
+         }
+         if(_turn_state > 0) {
+            this->turn_process_odo();
+         }
          _odoRequest_millis_last = millis();
    }
    if(millis() >= _loop_control_next_millis) { //-_10ms_loop_millis_last > 9) {
@@ -352,12 +378,7 @@ void OMOROBOT_R1::spin() {
          } else{
             _goal_W = 0;
          }
-         if(_turn_timer_state>0) {
-            this->turn_process_timer();
-         }
-         if(_turn_state > 0) {
-            this->turn_process_odo();
-         }
+
          if(_turn_timer_state2 > 0) {
             this->turn_process_timer2();
          }
@@ -606,6 +627,7 @@ void OMOROBOT_R1::go(int target_speed)
       _target_speed = target_speed;
       _resume_speed = target_speed;
    }
+   _lineDetect_millis_last = millis();    //reset lineout detection timer(for magnetic sensor)
    _go_flag = true;
 }
 /// Resume vehicle motion when paused. 
@@ -615,6 +637,7 @@ void OMOROBOT_R1::go(void)
    _lineOut_timer = 0;
    _target_speed = _resume_speed;
    Controller.set_target_v(_target_speed);
+   _lineDetect_millis_last = millis();    //reset lineout detection timer(for magnetic sensor)
    _go_flag = true;
 }
 /// Clear go flag and stop the vehicle
@@ -624,6 +647,7 @@ void OMOROBOT_R1::stop()
    _turn_timer_state = 0;
    _turn_timer_state2 = 0;
    _go_flag = false;
+   _turn_state = 0;
    //CanBus.set_pl_lift_mode(PL_LIFT_UP);
    //_lineOut_timeOut_ms = 0;
 }
@@ -634,11 +658,11 @@ void     OMOROBOT_R1::pause()       {
    Controller.set_target_v(_target_speed);
    }
 
-bool     OMOROBOT_R1::get_go_flag() {  return _go_flag;}
-int      OMOROBOT_R1::get_odo_l()   {  return _odo_l;}
-int      OMOROBOT_R1::get_odo_r()   {  return _odo_r;}
-double   OMOROBOT_R1::get_linePos() {  return _line_pos;}
-int      OMOROBOT_R1::get_lineout_flag() {return _isLineOut;}
+bool     OMOROBOT_R1::get_go_flag()       {  return _go_flag;  }
+int      OMOROBOT_R1::get_odo_l()         {  return _odo_l;    }
+int      OMOROBOT_R1::get_odo_r()         {  return _odo_r;    }
+double   OMOROBOT_R1::get_linePos()       {  return _line_pos; }
+int      OMOROBOT_R1::get_lineout_flag()  {  return _isLineOut;}
 /// Initiate turn process to start with direction and turn odometry count from wheel
 /// Turn angle is determined by odometry count and dependent to wheel size
 void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
@@ -710,7 +734,7 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
       }
    }
    double gain = 1.3;
-   if( setCount>0 ) {
+   if( setCount>0 ) {      //Atleast 1 candidate found in the sensor
       for(int j = 0; j<setCount; j++) {
          line_pos+=detectArr[j];
       }
@@ -720,12 +744,24 @@ double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
       _isLineOut = false;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
+      if(_cbDataEvent) {
+         _cbDataEvent(R1MSG_LINEPOS);
+      }
+      if(_stopped_by_lineout) {
+         _stopped_by_lineout = false;
+      }
    } 
    else {                            //No line is found
       _isLineOut = true;
       line_pos = _line_pos_last*1.3;   //Set line position as last known line pos
       if( (millis() - _lineDetect_millis_last) > _lineOut_timeOut_ms) {    //_lineOut_timeOut_ms is not working
-         stop();
+         if(!_stopped_by_lineout) {
+            _stopped_by_lineout = true;
+            if(_cbDataEvent) {
+               _cbDataEvent(R1MSG_LINEOUT);
+            }
+         }
+         this->stop();
       }
    }
    

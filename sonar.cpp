@@ -1,7 +1,12 @@
 #include <Arduino.h>
 #include "sonar.h"
 
+#define USE_AVERAGE_FILTER
+//#define USE_COMPLEMENTARY_FILTER
+
+#ifdef USE_COMPLEMENTARY_FILTER
 double      _alpha = 0.85;       //Complementary filter value
+#endif
 int         _detection_range = 40;
 double      _analog_to_cm_gain = 1.0;
 
@@ -44,11 +49,14 @@ double SONAR::measure_cm() {
       if(distance == 0 || distance > 400) {
       return -1.0;
       } else {
+#ifdef USE_COMPLEMENTARY_FILTER
          distance = distance * _alpha + (double)_distance_prev * (1.0-_alpha);
+#endif
          _distance_prev = (int)distance;
          return distance;
       }
    } else if(sonarType == SONAR_TYPE_ANALOG) {
+#ifdef USE_AVERAGE_FILTER
       int sum = 0;
       for(int i=0; i<9;i++){
          _distance_arr[i] = _distance_arr[i+1];
@@ -57,8 +65,10 @@ double SONAR::measure_cm() {
       _distance_arr[9] = analogRead(_pin_analog) * _analog_to_cm_gain;
       sum += _distance_arr[9];
       distance = sum /10.0;
+#elif defined USE_COMPLEMENTARY_FILTER
       //distance = (double)analogRead(_pin_analog) * _analog_to_cm_gain;
       //distance = distance * _alpha + (double)_distance_prev*(1.0-_alpha);
+#endif
       _distance_prev = (int)distance;
       return distance;
    }
