@@ -330,7 +330,7 @@ void OMOROBOT_R1::spin() {
          if(_go_flag) {
             #ifdef LINE_METHOD_0
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
-            if(_target_speed > 800){
+            if(_target_speed > 400){
                if(_line_pos > LINE_EDGE_POS_L|| _line_pos < -LINE_EDGE_POS_L) {
                   if(_line_pos > LINE_EDGE_POS_H || _line_pos < -LINE_EDGE_POS_H) {
                      Controller.set_target_v(_target_speed - LINE_EDGE_SPEED);
@@ -621,9 +621,9 @@ void OMOROBOT_R1::go(int target_speed)
 {
    if(target_speed) {
       _lineOut_timer = 0;
-     Controller.set_target_v(target_speed);
-     Serial.print("R1 GO:");
-     Serial.println(target_speed);
+      Controller.set_target_v(target_speed);
+      Serial.print("R1 GO:");
+      Serial.println(target_speed);
       _target_speed = target_speed;
       _resume_speed = target_speed;
    }
@@ -634,6 +634,7 @@ void OMOROBOT_R1::go(int target_speed)
 /// If vehicle is stopped, calling this wouldn't start the vehicle
 void OMOROBOT_R1::go(void)
 {
+   Serial.println("R1 GO");
    _lineOut_timer = 0;
    _target_speed = _resume_speed;
    Controller.set_target_v(_target_speed);
@@ -643,6 +644,8 @@ void OMOROBOT_R1::go(void)
 /// Clear go flag and stop the vehicle
 void OMOROBOT_R1::stop()
 {
+   Serial.print("STOPPED at\t");
+   Serial.println(millis());
    _target_speed = 0;
    _turn_timer_state = 0;
    _turn_timer_state2 = 0;
@@ -667,6 +670,9 @@ int      OMOROBOT_R1::get_lineout_flag()  {  return _isLineOut;}
 /// Turn angle is determined by odometry count and dependent to wheel size
 void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
 {
+   Serial.print("START TURN ODO\t");
+   Serial.print(dir); Serial.print("\t");
+   Serial.print(turn_odo_cnt); Serial.println("");
    _turn_state = 1;
    if(dir == TURN_RIGHT) {
       _turn_cmd = 0;
@@ -676,9 +682,19 @@ void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
    _turn_odo_cnt = turn_odo_cnt;
    //this->m_turn_process = &this->turn_process_odo;
 }
+void OMOROBOT_R1::stop_turn(void)
+{
+   _turn_state = 0;
+   _turn_odo_cnt = 0;
+   _goal_W = 0;
+   _goal_V = 0;
+}
 
 void OMOROBOT_R1::start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time)
 {
+   Serial.print("START TURN TIMER 1\t");
+   Serial.print(dir); Serial.print("\t");
+   Serial.print(time); Serial.println("");
    _turn_timer_state = 1;
    _load_unload = load_unload;
    if(dir == TURN_RIGHT) {
@@ -694,6 +710,9 @@ void OMOROBOT_R1::start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION di
 }
 void OMOROBOT_R1::start_turn_timer2(TURN_DIRECTION dir, int speed, int time)
 {
+   Serial.print("START TURN TIMER 2\t");
+   Serial.print(dir); Serial.print("\t");
+   Serial.print(time); Serial.println("");
    if(_turn_timer_state > 0) {
       return;
    }
@@ -722,10 +741,10 @@ void OMOROBOT_R1::set_load_unload_stop()
  **/
 double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
 {
-   double line_pos = 0.0;
+   double   line_pos = 0.0;
    uint16_t magnetic_data = ((mag_rx.data[6] << 8) & 0xFF00) | (mag_rx.data[7] & 0x00FF);    //Binary data[6][7] contains 1:detected, 0:undetected
-   uint8_t detectArr[15];
-   uint8_t setCount = 0;         //Stores consecutive number set in magnetic data
+   uint8_t  detectArr[15];
+   int      setCount = 0;         //Stores consecutive number set in magnetic data
    // Scan line data from 1 to 16 
    for(int i = 1; i<16; i++) {
       if((magnetic_data>>i)&0x01) {

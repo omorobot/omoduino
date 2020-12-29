@@ -19,11 +19,11 @@
 
 #define DEFAULT_TURN_W          180 //100
 
-#define LINE_EDGE_SPEED        450
+#define LINE_EDGE_SPEED        200
 #define LINE_EDGE_POS_H          6.0
 #define LINE_EDGE_POS_L          4.0
 
-#define LINE_METHOD_2
+#define LINE_METHOD_0
 
 //#define DEBUG_DRIVER              //Uncomment this to print can messages on Serial port
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
@@ -118,6 +118,7 @@ public:
    void     start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt);
    void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
    void     start_turn_timer2(TURN_DIRECTION dir, int speed, int time);
+   void     stop_turn(void);
    //void     set_turn_speed(uint16_t turn_W);
    void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
    void     set_v_accel(uint16_t accel);
