@@ -23,7 +23,7 @@ void R1_CanBus::begin_bus(void)
 {
    SPI.begin();
    _mcp2515->reset();
-   _mcp2515->setBitrate(CAN_500KBPS);
+   _mcp2515->setBitrate(CAN_250KBPS, MCP_8MHZ);
    _mcp2515->setNormalMode();
    Serial.println("R1 command bus begin");
 }

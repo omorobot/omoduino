@@ -32,6 +32,8 @@ LINE_DETECT_RESULT LINE_DETECTOR::detect_linePos_from_u16data(uint16_t data)
    uint8_t  detectArr[15];
    int      setCount = 0;         //Stores consecutive number set in magnetic data
    // Scan line data from 1 to 16 
+   // Serial.print("FRONT Data:\t");
+   // Serial.print(data, HEX);Serial.println("");
    for(int i = 1; i<16; i++) {
       if((data>>i)&0x01) {
          detectArr[setCount] = i-1;
@@ -58,5 +60,6 @@ LINE_DETECT_RESULT LINE_DETECTOR::detect_linePos_from_u16data(uint16_t data)
          result = LINE_OUT_TIMEOUT;
       }
    }
+   this->_line_pos = line_pos;
    return result;
 }

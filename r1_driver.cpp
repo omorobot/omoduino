@@ -503,6 +503,8 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx, LINE_DETECTOR_POSITION l
    if(this->_line_detector_type == DETECTOR_TYPE_MAGNETIC) {
       uint16_t lineData = ((can_rx.data[6] << 8) & 0xFF00) | (can_rx.data[7] & 0x00FF); 
       if(line_position == DETECTOR_FRONT) {
+         // Serial.print("FRONT Data:\t");
+         // Serial.print(lineData, BIN);Serial.println("");
          this->process_magnetic_line_sensor(&this->line_detector_front, lineData, DETECTOR_FRONT);
       } else {
          this->process_magnetic_line_sensor(&this->line_detector_rear, lineData, DETECTOR_REAR);
