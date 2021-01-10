@@ -15,6 +15,7 @@
 #include <inttypes.h>
 #include "r1_command.h"
 #include "r1_controller.h"
+#include "line_detector.h"
 
 
 #define DEFAULT_TURN_W          180 //100
@@ -53,6 +54,14 @@ enum TURN_DIRECTION{
 enum PL_LOAD_UNLOAD{
    PL_LOADING,
    PL_UNLOADING
+};
+enum LINE_DETECTOR_POSITION{
+   DETECTOR_FRONT,
+   DETECTOR_REAR
+};
+enum LINE_DETECTOR_TYPE{
+   DETECTOR_TYPE_MAGNETIC = 0,
+   DETECTOR_TYPE_OAGV = 1
 };
 
 enum TAG_Type{
@@ -99,6 +108,7 @@ public:
    void     set_remoteMode(REMOTE_MODE mode);
    void     set_lineoutTime(int ms);
    void     new_can_line(struct can_frame can_rx);
+   void     new_can_line(struct can_frame can_rx, LINE_DETECTOR_POSITION);
    void     new_can_odo(struct can_frame can_rx);
    void     new_can_tag(struct can_frame can_rx);
    void     go(int target_speed);
@@ -109,12 +119,15 @@ public:
    int      get_odo_l();
    int      get_odo_r();
    double   get_linePos();
+   double   get_linePos(LINE_DETECTOR_POSITION);
    int      get_lineout_flag();
    double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
    //int      get_lineoutTimer();
    //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
    void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
+   void     select_line_detector(LINE_DETECTOR_POSITION);
+   void     set_line_detectorType(LINE_DETECTOR_TYPE);
    void     start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt);
    void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
    void     start_turn_timer2(TURN_DIRECTION dir, int speed, int time);
@@ -135,7 +148,9 @@ private:
    DRIVE_MODE              _drive_mode;
    R1_VEHICLE_TYPE         _vehicle_type;
    R1_Controller           Controller;
-
+   LINE_DETECTOR           line_detector_front;
+   LINE_DETECTOR           line_detector_rear;
+   LINE_DETECTOR_POSITION  _current_line_detector_position;
    m_speed_control_event   m_5ms_speed_control;
    m_line_control_event    m_10ms_line_control;
    //m_process               m_turn_process;
@@ -199,10 +214,13 @@ private:
    Tag_Struct              _new_tagStr;               //Turn odo count to stop turn
    struct can_frame _canRxMsg;
    REMOTE_MODE             _remote_mode;
+   LINE_DETECTOR_TYPE      _line_detector_type;
    void newCanRxEvent(can_frame can_rx);
    void turn_process_odo(void);
    void turn_process_timer(void);
    void turn_process_timer2(void);
+   void  process_magnetic_line_sensor(LINE_DETECTOR*, uint16_t, LINE_DETECTOR_POSITION);
+
 };
 
 #endif

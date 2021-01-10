@@ -46,7 +46,8 @@ enum PL_LIFT_MODE_TYPE {
 enum R1_MessageType{
    R1MSG_ODO,
    R1MSG_LINEPOS,
-   R1MSG_LINEOUT
+   R1MSG_LINEOUT,
+   R1MSG_TURN_FINISH
 };
 
 class MCP2515;

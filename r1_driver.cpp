@@ -4,7 +4,7 @@
 #include "r1_driver.h"
 #include <string.h>
 
-volatile int       _lineOut_timeOut_ms;
+volatile int         _lineOut_timeOut_ms;
 volatile bool        _stopped_by_lineout = false;
 int turn_wait_timer = 0;
 
@@ -72,7 +72,8 @@ case 3:
       }
       break;
    case 7:
-      _go_flag = true;
+      //_go_flag = true;
+      this->_cbDataEvent(R1MSG_TURN_FINISH);
       _turn_state = 0;
    break;
    }
@@ -253,6 +254,7 @@ OMOROBOT_R1::OMOROBOT_R1() {
    CanBus = R1_CanBus();
    CanBus.onNewCanRx(this, &this->newCanRxEvent);
    _drive_mode = DRIVE_MODE_DEFAULT;
+   this->_current_line_detector_position = DETECTOR_FRONT;
 }
 /**
 *   @brief Initialize MCP2515 with different CS pin for Arduino Mega 2560 board
@@ -261,6 +263,7 @@ OMOROBOT_R1::OMOROBOT_R1(uint16_t cspin) {
    CanBus = R1_CanBus(cspin);
    CanBus.onNewCanRx(this, &this->newCanRxEvent);
    _drive_mode = DRIVE_MODE_DEFAULT;
+   this->_current_line_detector_position = DETECTOR_FRONT;
 }
 /**
 * @brief Initialize with MCP2515 object as external reference
@@ -269,6 +272,7 @@ OMOROBOT_R1::OMOROBOT_R1(MCP2515* mcp2515) {
    CanBus = R1_CanBus(mcp2515);
    _drive_mode = DRIVE_MODE_DEFAULT;
    _can_rx_extern = true;    //CanRx is scanned in external reference so no need to scan in the loop
+   this->_current_line_detector_position = DETECTOR_FRONT;
 }
 /**
 * @brief Begin initialize items
@@ -421,9 +425,32 @@ void OMOROBOT_R1::spin() {
 void OMOROBOT_R1::set_lineout_delay(int ms)
 {
    _lineOut_timeOut_ms = ms;
+   this->line_detector_front.set_lineout_timeout_ms(ms);
+   this->line_detector_rear.set_lineout_timeout_ms(ms);
+}
+void  OMOROBOT_R1::select_line_detector(LINE_DETECTOR_POSITION pos)
+{
+   switch(pos) {
+      case DETECTOR_FRONT:
+         this->_current_line_detector_position = DETECTOR_FRONT;
+         break;
+      case DETECTOR_REAR:
+         this->_current_line_detector_position = DETECTOR_REAR;
+         break;
+      default:
+         this->_current_line_detector_position = DETECTOR_FRONT;
+         break;
+   }
+}
+/**
+ * @brief select line detector type
+ */
+void  OMOROBOT_R1::set_line_detectorType(LINE_DETECTOR_TYPE type) {
+   this->_line_detector_type = type;
 }
 /**
 *  @brief Process line position message from can bus
+*        This process is for oagv_line type detector
 */
 void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
@@ -468,6 +495,39 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
    }
 }
 /**
+ * @brief Process line position data from can_bus
+ * This process is for magnetic type line detector
+ * */
+void OMOROBOT_R1::new_can_line(struct can_frame can_rx, LINE_DETECTOR_POSITION line_position)
+{
+   if(this->_line_detector_type == DETECTOR_TYPE_MAGNETIC) {
+      uint16_t lineData = ((can_rx.data[6] << 8) & 0xFF00) | (can_rx.data[7] & 0x00FF); 
+      if(line_position == DETECTOR_FRONT) {
+         this->process_magnetic_line_sensor(&this->line_detector_front, lineData, DETECTOR_FRONT);
+      } else {
+         this->process_magnetic_line_sensor(&this->line_detector_rear, lineData, DETECTOR_REAR);
+      }
+   }
+}
+void OMOROBOT_R1::process_magnetic_line_sensor(LINE_DETECTOR* detector, uint16_t data, LINE_DETECTOR_POSITION pos)
+{
+   LINE_DETECT_RESULT result;
+   result = detector->detect_linePos_from_u16data(data);
+   if(pos == this->_current_line_detector_position) { //If detector is currently in use
+      this->_line_pos = detector->get_line_pos();     //Use the latest line position data
+      if(result == LINE_OUT_TIMEOUT) {                //Check if lineout timeout occured
+         if(!_stopped_by_lineout) {
+            _stopped_by_lineout = true;
+            if(_cbDataEvent) {
+               _cbDataEvent(R1MSG_LINEOUT);
+            }
+         }
+         this->stop();
+      }
+   }
+}
+
+/**
  * @brief When new tag message found
  */
 void OMOROBOT_R1::new_can_tag(struct can_frame can_rx)
@@ -479,14 +539,6 @@ void OMOROBOT_R1::new_can_tag(struct can_frame can_rx)
       _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[1];
       _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[2];
       _tag_data_prev[3] = _new_tagStr.bytes[3] = can_rx.data[3];
-      // Serial.print("TAG:");
-      // Serial.print(_new_tagStr.bytes[0],HEX);
-      // Serial.print(",");
-      // Serial.print(_new_tagStr.bytes[1],HEX);
-      // Serial.print(",");
-      // Serial.print(_new_tagStr.bytes[2],HEX);
-      // Serial.print(",");
-      // Serial.println(_new_tagStr.bytes[3],HEX);
       _new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
       _cbTagEvent(_new_tagStr);                          //Callback new Tag found event
    } 
@@ -665,6 +717,22 @@ bool     OMOROBOT_R1::get_go_flag()       {  return _go_flag;  }
 int      OMOROBOT_R1::get_odo_l()         {  return _odo_l;    }
 int      OMOROBOT_R1::get_odo_r()         {  return _odo_r;    }
 double   OMOROBOT_R1::get_linePos()       {  return _line_pos; }
+double   OMOROBOT_R1::get_linePos(LINE_DETECTOR_POSITION pos) {
+   double retVal;
+   switch (pos)
+   {
+   case DETECTOR_FRONT:
+      retVal = this->line_detector_front.get_line_pos();
+      break;
+   case DETECTOR_REAR:
+      retVal = this->line_detector_rear.get_line_pos();
+      break;
+   default:
+      retVal = 0.0;
+      break;
+   }
+   return retVal;
+}
 int      OMOROBOT_R1::get_lineout_flag()  {  return _isLineOut;}
 /// Initiate turn process to start with direction and turn odometry count from wheel
 /// Turn angle is determined by odometry count and dependent to wheel size
