@@ -120,11 +120,7 @@ public:
    int      get_odo_r();
    double   get_linePos();
    double   get_linePos(LINE_DETECTOR_POSITION);
-   int      get_lineout_flag();
-   double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
-   //int      get_lineoutTimer();
-   //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
    void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
    void     select_line_detector(LINE_DETECTOR_POSITION);
    void     set_line_detectorType(LINE_DETECTOR_TYPE);
@@ -132,7 +128,6 @@ public:
    void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
    void     start_turn_timer2(TURN_DIRECTION dir, int speed, int time);
    void     stop_turn(void);
-   //void     set_turn_speed(uint16_t turn_W);
    void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
    void     set_v_accel(uint16_t accel);
    void     set_pid_gains(PID_Type pid);
@@ -153,7 +148,6 @@ private:
    LINE_DETECTOR_POSITION  _current_line_detector_position;
    m_speed_control_event   m_5ms_speed_control;
    m_line_control_event    m_10ms_line_control;
-   //m_process               m_turn_process;
    R1_CanBus               CanBus;
    uint64_t                _odoRequest_millis_last;
    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
