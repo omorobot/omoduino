@@ -373,17 +373,14 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
    uint8_t tag_diff_cnt = 0;
    int i;
-   int8_t lineRaw = 0;
    uint8_t tag_data[4];
    switch(can_rx.data[0]) {
    case 1:   //Line detect
    {
       _isLineOut = false;
-      lineRaw = (int8_t)can_rx.data[1];
-      _line_pos = (double)lineRaw;
+      _line_pos = (double)can_rx.data[1];
       _lineDetect_millis_last = millis();    //Update line detection time
-      _lineOut_timer = 0;
-
+      _lineOut_timer = 0;     //reset lineout timer
       tag_data[0] = can_rx.data[4];
       tag_data[1] = can_rx.data[5];
       tag_data[2] = can_rx.data[6];
@@ -407,11 +404,6 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
          }
       }
       _cbDataEvent(R1MSG_LINEOUT);
-      break;
-   case 3:  //magnetic line
-      _line_pos = get_magnetic_linePos(can_rx);
-      //Serial.print("Line : ");
-      //Serial.println(_line_pos);
       break;
    }
 }
@@ -584,7 +576,6 @@ bool     OMOROBOT_R1::get_go_flag() {  return _go_flag;}
 int      OMOROBOT_R1::get_odo_l()   {  return _odo_l;}
 int      OMOROBOT_R1::get_odo_r()   {  return _odo_r;}
 double   OMOROBOT_R1::get_linePos() {  return _line_pos;}
-int      OMOROBOT_R1::get_lineout_flag() {return _isLineOut;}
 /// Initiate turn process to start with direction and turn odometry count from wheel
 /// Turn angle is determined by odometry count and dependent to wheel size
 void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
@@ -634,52 +625,4 @@ void OMOROBOT_R1::start_turn_timer2(TURN_DIRECTION dir, int speed, int time)
 void OMOROBOT_R1::set_load_unload_stop()
 {
    _is_load_unload_finished = true;
-}
-/**
- * @brief Try to find center position of the magnetic line from binary data 
- * Example: [0][0][0][1][1][1][0][0][0][0][0][0][0][0][0]
- * Add set position: 3+4+5 = 12
- * Divide by 3 = 4
- * Substract center position 4 - 7.5 = -3.5
- **/
-double OMOROBOT_R1::get_magnetic_linePos(struct can_frame mag_rx)
-{
-   double line_pos = 0.0;
-   uint16_t magnetic_data = ((mag_rx.data[6] << 8) & 0xFF00) | (mag_rx.data[7] & 0x00FF);    //Binary data[6][7] contains 1:detected, 0:undetected
-   uint8_t detectArr[15];
-   uint8_t setCount = 0;         //Stores consecutive number set in magnetic data
-   // Scan line data from 1 to 16 
-   for(int i = 1; i<16; i++) {
-      if((magnetic_data>>i)&0x01) {
-         detectArr[setCount] = i-1;
-         setCount++;
-      }
-   }
-   double gain = 1.3;
-   if( setCount>0 ) {
-      for(int j = 0; j<setCount; j++) {
-         line_pos+=detectArr[j];
-      }
-      line_pos = line_pos / setCount - 7;
-      line_pos = line_pos * gain;
-      _line_pos_last = line_pos;       //Remember last known line pos 
-      _isLineOut = false;
-      _lineDetect_millis_last = millis();    //Update line detection time
-      _lineOut_timer = 0;
-   } 
-   else {                            //No line is found
-      _isLineOut = true;
-      line_pos = _line_pos_last*1.3;   //Set line position as last known line pos
-      if( (millis() - _lineDetect_millis_last) > _lineOut_timeOut_ms) {    //_lineOut_timeOut_ms is not working
-         stop();
-      }
-   }
-   
-   // Serial.print("Line\t");
-   // if(_isLineOut) {
-   //    Serial.print("OUT ");
-   // }
-   // Serial.println(line_pos);
-   
-   return line_pos;
 }

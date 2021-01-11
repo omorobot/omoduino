@@ -102,16 +102,11 @@ public:
    int      get_odo_l();
    int      get_odo_r();
    double   get_linePos();
-   int      get_lineout_flag();
-   double   get_magnetic_linePos(struct can_frame mag_rx);
    void     set_load_unload_stop();
-   //int      get_lineoutTimer();
-   //int     can_TxMsg_init(struct can_frame* frame, int id, int dlc);
    void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
    void     start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt);
    void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
    void     start_turn_timer2(TURN_DIRECTION dir, int speed, int time);
-   //void     set_turn_speed(uint16_t turn_W);
    void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
    void     set_v_accel(uint16_t accel);
    void     set_pid_gains(PID_Type pid);
