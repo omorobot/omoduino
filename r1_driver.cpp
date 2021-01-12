@@ -524,6 +524,15 @@ void OMOROBOT_R1::process_magnetic_line_sensor(LINE_DETECTOR* detector, uint16_t
             }
          }
          this->stop();
+      } else if(result == LINE_OUT) {
+         if(!_isLineOut) { 
+            _isLineOut = true;   //Set flag
+         }
+      } else {      //LINE_OK
+         if(_isLineOut) {
+            _isLineOut = false;
+            _cbDataEvent(R1MSG_LINEPOS);
+         }
       }
    }
 }
