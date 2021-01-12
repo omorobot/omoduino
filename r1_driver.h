@@ -182,7 +182,7 @@ private:
    int                     _resume_speed;          // target speed when paused
 
 
-   uint8_t                 _turn_state;
+   //uint8_t                 _turn_state;
    uint8_t                 _turn_timer_state;
    uint8_t                 _turn_timer_state2;
    uint8_t                 _turn_cmd;

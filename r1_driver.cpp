@@ -4,6 +4,8 @@
 #include "r1_driver.h"
 #include <string.h>
 
+volatile uint8_t _turn_state;
+
 volatile int         _lineOut_timeOut_ms;
 volatile bool        _stopped_by_lineout = false;
 int turn_wait_timer = 0;
@@ -24,6 +26,7 @@ void OMOROBOT_R1::turn_process_odo(void)
       //Do nothing here  
       break;
    case 1:   //Stop the vehicle
+   {
       _go_flag = false;
       _goal_W = 0;
       if(_cmd_speed == 0) {
@@ -34,8 +37,10 @@ void OMOROBOT_R1::turn_process_odo(void)
          turn_wait_timer = 0;
          _turn_state = 2;
       }
+   }
       break;
    case 2:
+   {
       Serial.print("ODO L:");
       Serial.println(_odo_l); 
       if(abs(_odo_l) < 10) {   //Check odometry reset
@@ -43,14 +48,18 @@ void OMOROBOT_R1::turn_process_odo(void)
          turn_wait_timer = 0;
          _turn_state = 3;
       }
+   }
       break;
-case 3:
+   case 3:
+   {
       _goal_W = 0;
-      if(turn_wait_timer++ > 100) {
+      turn_wait_timer++;
+      if(turn_wait_timer > 100) {
          _turn_state = 4;
          Serial.println("TURN Start");
       }
-   break;
+      break;
+   }
    case 4:               //Now start to turn
       if(_turn_cmd == 0) {    //For right turn
          _goal_W = _turning_W;
@@ -321,9 +330,9 @@ void OMOROBOT_R1::spin() {
       _5ms_loop_millis_last = millis();
    }
    if(millis()-_odoRequest_millis_last > 9) {
-         if(_turn_timer_state>0) {
-            this->turn_process_timer();
-         }
+         // if(_turn_timer_state>0) {
+         //    this->turn_process_timer();
+         // }
          if(_turn_state > 0) {
             this->turn_process_odo();
          }
@@ -387,9 +396,9 @@ void OMOROBOT_R1::spin() {
             //_goal_W = 0;
          }
 
-         if(_turn_timer_state2 > 0) {
-            this->turn_process_timer2();
-         }
+         // if(_turn_timer_state2 > 0) {
+         //    this->turn_process_timer2();
+         // }
          if(_vehicle_type == VEHICLE_TYPE_PL153) {
             CanBus.cmd_pl_dac_angle(_goal_V*_v_dir, _goal_W*_w_dir);  
          } else {
@@ -523,7 +532,9 @@ void OMOROBOT_R1::process_magnetic_line_sensor(LINE_DETECTOR* detector, uint16_t
                _cbDataEvent(R1MSG_LINEOUT);
             }
          }
-         this->stop();
+         if(_turn_state==0) {
+            this->stop();
+         }
       } else if(result == LINE_OUT) {
          if(!_isLineOut) { 
             _isLineOut = true;   //Set flag
