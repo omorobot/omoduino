@@ -762,7 +762,9 @@ void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
    Serial.print("START TURN ODO\t");
    Serial.print(dir); Serial.print("\t");
    Serial.print(turn_odo_cnt); Serial.println("");
-   _turn_state = 1;
+   if(_turn_state == 0){               //process 작동 중 reset 방지
+      _turn_state = 1;
+   }
    if(dir == TURN_RIGHT) {
       _turn_cmd = 0;
    } else if(dir == TURN_LEFT) {
