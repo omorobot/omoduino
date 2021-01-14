@@ -640,7 +640,7 @@ void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
       if(_vehicle_type == VEHICLE_TYPE_R1) {
          this->m_5ms_speed_control = &Controller.speed_control;
          this->m_10ms_line_control = &Controller.line_control_vw;
-         set_turning_speed(0, 100);
+         set_turning_speed(0, 150);
       } else if(_vehicle_type == VEHICLE_TYPE_PL153) {
          set_turning_speed(500, 180);
          this->m_5ms_speed_control = &Controller.speed_control;
