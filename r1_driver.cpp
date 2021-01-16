@@ -30,12 +30,20 @@ void OMOROBOT_R1::turn_process_odo(void)
       _goal_W = 0;
       if(_cmd_speed == 0) {
          _odo_reset = true;
-         _turn_state = 2;
+         //this->request_odo();
+         this->CanBus.request_odo(_odo_reset);
+         if(turn_wait_timer++ > 200) {
+            _turn_state = 2;
+            turn_wait_timer = 0;
+         }
       }
       break;
    case 2:
-      if(abs(_odo_l) < 10) {   //Check odometry reset
+      Serial.print("ODO L:");
+      Serial.println(_odo_l); 
+      if(abs(_odo_l) < 50) {   //Check odometry reset
          _odo_reset = false;
+         this->request_odo();
          turn_wait_timer = 0;
          _turn_state = 3;
       }
@@ -378,7 +386,8 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
    case 1:   //Line detect
    {
       _isLineOut = false;
-      _line_pos = (double)can_rx.data[1];
+      int8_t line_pos = can_rx.data[1];
+      _line_pos = (double)line_pos;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;     //reset lineout timer
       tag_data[0] = can_rx.data[4];
@@ -412,11 +421,14 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 */
 void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
 {
+   if(can_rx.data[0] == 0x02) {
    _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
    _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
-   // Serial.print("ODO:");
-   // Serial.print(_odo_r);Serial.print(",");
-   // Serial.print(_odo_l);Serial.println(",");
+   //  Serial.print("ODO:");
+   //  Serial.print(can_rx.data[0],HEX);Serial.print(",");
+   //  Serial.print(_odo_r);Serial.print(",");
+   //  Serial.print(_odo_l);Serial.println(",");
+   }
 }
 
 void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
