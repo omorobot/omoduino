@@ -353,8 +353,10 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
    int i;
    switch(can_rx.data[0]) {
    case 1:   //Line detect
+   {
       _isLineOut = false;
-      _line_pos = (double)can_rx.data[1];
+      int8_t line_pos = can_rx.data[1];
+      _line_pos = (double)line_pos;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
       for(i =0; i<4; i++) {
@@ -372,6 +374,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       } else {
          _same_tag_reset_timer = 2500;
       }
+   }
       break;
    case 2:   //No line
       _isLineOut = true;
@@ -565,6 +568,7 @@ void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
    } else if(dir == TURN_LEFT) {
       _turn_cmd = 1;
    }
+   _
    _turn_odo_cnt = turn_odo_cnt;
    //this->m_turn_process = &this->turn_process_odo;
 }
