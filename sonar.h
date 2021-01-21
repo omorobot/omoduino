@@ -14,6 +14,12 @@
 #ifndef _SONAR_H_
 #define _SONAR_H_
 
+#define SONAR_USE_AVERAGE_FILTER
+//#define SONAR_USE_COMPLEMENTARY_FILTER
+#ifdef SONAR_USE_AVERAGE_FILTER
+#define SONAR_FILTER_NUM         10
+#endif
+
 class SONAR
 {
    typedef enum {
@@ -32,11 +38,15 @@ public:
 private:
    SonarType   sonarType;
    int         _distance_prev;
-   int         _distance_arr[10];
+#ifdef SONAR_USE_AVERAGE_FILTER
+   int         _distance_arr[SONAR_FILTER_NUM];
+#endif
+   int         distance_cm;
+   int         _detection_range;
+   uint32_t    _measure_cnt;
    int         _pin_trigger;
    int         _pin_echo;
    int         _pin_analog;
-   bool        _detected;
    bool        _enabled;
 };
 
