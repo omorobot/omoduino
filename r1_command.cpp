@@ -89,7 +89,7 @@ void R1_CanBus::request_odo(bool reset)
 {
    if(reset) {
       _can_tx_odo.data[0] = CAN_MOTOR_ODO_RESET;
-      Serial.println("ODO_RESET");
+      //Serial.println("ODO_RESET");
    }else {
       _can_tx_odo.data[0] = CAN_MOTOR_ODO_REQUEST;
    }

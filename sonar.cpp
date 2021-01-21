@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include "sonar.h"
 
+#ifdef SONAR_USE_COMPLEMENTARY_FILTER
 double      _alpha = 0.85;       //Complementary filter value
-int         _detection_range = 40;
+#endif
+//int         _detection_range = 40;
 double      _analog_to_cm_gain = 1.0;
 
 SONAR::SONAR(int analogPin)
@@ -10,8 +12,9 @@ SONAR::SONAR(int analogPin)
    sonarType = SONAR_TYPE_ANALOG;
    _pin_analog = analogPin;
    _distance_prev = 0;
-   _detected = false;
+   //_detected = false;
    _enabled = true;
+   this->_measure_cnt = 0;
 }
 
 SONAR::SONAR(int pin_trigger, int pin_echo) {
@@ -21,7 +24,7 @@ SONAR::SONAR(int pin_trigger, int pin_echo) {
    pinMode(_pin_trigger, OUTPUT);
    pinMode(_pin_echo,  INPUT);
    _distance_prev = 0;
-   _detected = false;
+   //_detected = false;
    _enabled = true;
 }
 
@@ -42,42 +45,77 @@ double SONAR::measure_cm() {
       // Calcualte distance
       distance = duration * 0.034/2;
       if(distance == 0 || distance > 400) {
-      return -1.0;
+         return -1.0;
       } else {
+         this->_measure_cnt++;
+#ifdef SONAR_USE_COMPLEMENTARY_FILTER
          distance = distance * _alpha + (double)_distance_prev * (1.0-_alpha);
+#endif
          _distance_prev = (int)distance;
          this->distance_cm = distance;
          return distance;
       }
    } else if(sonarType == SONAR_TYPE_ANALOG) {
+      this->_measure_cnt++;
       distance = (double)analogRead(_pin_analog) * _analog_to_cm_gain;
+#ifdef SONAR_USE_AVERAGE_FILTER
+      int sum = 0;
+      for(int i=0; i<(SONAR_FILTER_NUM-1);i++){
+         _distance_arr[i] = _distance_arr[i+1];
+         sum += _distance_arr[i];
+      }
+      _distance_arr[SONAR_FILTER_NUM-1] = distance;
+      sum += _distance_arr[SONAR_FILTER_NUM-1];
+      distance = sum /SONAR_FILTER_NUM;
+#elif defined SONAR_USE_COMPLEMENTARY_FILTER
       distance = distance * _alpha + (double)_distance_prev*(1.0-_alpha);
       _distance_prev = (int)distance;
-      this->distance_cm = distance;
+#endif
+      this->distance_cm = (int)distance;
       return distance;
    }
 }
 
+double SONAR::get_distance()
+{
+#ifdef SONAR_USE_AVERAGE_FILTER
+   if(_measure_cnt > SONAR_FILTER_NUM) {
+      return this->distance_cm;
+   } else {
+      return -1.0;
+   }
+#else 
+      return this->disatnce_cm;
+#endif
+}
+
 
 bool SONAR::detected() {
+   bool detected = false;
    if(!_enabled) {
       return false;
    }
-   if(_distance_prev > 0.0) {
-      if(_distance_prev < _detection_range) {
-         _detected = true;
+#ifdef SONAR_USE_AVERAGE_FILTER
+   if(this->_measure_cnt < SONAR_FILTER_NUM+5) {
+      Serial.print("Sonar cnt");Serial.println(this->_measure_cnt);
+      return false;
+   }
+#endif
+   if(this->distance_cm > 0.0) {
+      if(this->distance_cm < this->_detection_range) {
+         detected = true;
       }
       else {
-         _detected = false;
+         detected = false;
       }
    }
-   return _detected;
+   return detected;
 }
 /**
  * @brief set detection threshold value
  * */
 void SONAR::set_range(int range) {
-   _detection_range = range;
+   this->_detection_range = range;
 }
 
 void SONAR::set_enable(bool en) {

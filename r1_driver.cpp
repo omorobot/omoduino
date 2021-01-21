@@ -16,12 +16,49 @@ void OMOROBOT_R1::set_speed(int V)
 {
    _target_speed = V;
 }
+/// Initiate turn process with odometer count
+/// (+) turn_odo_cnt turn to left vs (-) turn_odo_cnt turns to right
+/// speed is for designated turning speed
+int OMOROBOT_R1::start_turn_odo(int turn_odo_cnt, uint16_t speed)
+{
+   if(turn_odo_cnt > 0) {              //Positive turn odo cnt means turn to left
+      this->turn_cmd.speed_w = speed;
+      this->turn_cmd.target_odo_cnt = turn_odo_cnt;
+   } else if(turn_odo_cnt < 0) {       //Negative turn odo cnt means turn to right
+      this->turn_cmd.speed_w = -speed;
+      this->turn_cmd.target_odo_cnt = -turn_odo_cnt;
+   } else {
+      return 1;
+   }
+   // _turn_odo_cnt = turn_odo_cnt;
+   // _turn_state = 1;
+   this->turn_cmd.state_odo = 1;
+   return 0;
+   //this->m_turn_process = &this->turn_process_odo;
+}
+
+void OMOROBOT_R1::start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time)
+{
+   this->turn_cmd.state_timer = 1;
+   _load_unload = load_unload;
+   if(dir == TURN_RIGHT) {
+      turn_cmd.speed_w = 180;
+   } else if(dir == TURN_LEFT) {
+      turn_cmd.speed_w = -180;
+   }
+   turn_cmd.speed_v = speed;
+   turn_cmd.target_timer_set = time;
+   //_turn_timer_set = time;
+   Serial.print("Set turn timer:"); Serial.println((uint16_t)turn_cmd.target_timer_set);
+   _is_load_unload_finished = false;
+   //this->m_turn_process = &this->turn_process_timer;
+}
 /**
  * @brief Turn process with odometry count (More precise)
  * */
 void OMOROBOT_R1::turn_process_odo(void)
 {
-   switch(_turn_state){
+   switch(this->turn_cmd.state_odo){
    case 0:
       //Do nothing here  
       break;
@@ -30,67 +67,57 @@ void OMOROBOT_R1::turn_process_odo(void)
       _goal_W = 0;
       if(_cmd_speed == 0) {
          _odo_reset = true;
-         //this->request_odo();
-         this->CanBus.request_odo(_odo_reset);
-         if(turn_wait_timer++ > 200) {
-            _turn_state = 2;
-            turn_wait_timer = 0;
+         if(this->turn_cmd.wait_cnt++ > 200) {
+            turn_cmd.state_odo = 2;
+            turn_cmd.wait_cnt = 0;
+            _odo_reset = false;
          }
       }
       break;
    case 2:
-      Serial.print("ODO L:");
-      Serial.println(_odo_l); 
       if(abs(_odo_l) < 50) {   //Check odometry reset
          _odo_reset = false;
-         this->request_odo();
-         turn_wait_timer = 0;
-         _turn_state = 3;
+         turn_cmd.state_odo = 3;
       }
       break;
    case 3:
       _goal_W = 0;
       if(turn_wait_timer++ > 100) {
-         _turn_state = 4;
+         turn_cmd.state_odo = 4;
          Serial.println("TURN Start");
       }
    break;
    case 4:               //Now start to turn
-      if(_turn_cmd == 0) {    //For right turn
-         _goal_W = _turning_W;
-         _goal_V =  0;
-      } else if(_turn_cmd == 1) { //For left turn
-         _goal_W = -_turning_W;
-         _goal_V = 0;
-      }
-      _turn_state = 5;
+      _goal_V = turn_cmd.speed_v;
+      _goal_W = turn_cmd.speed_w;
+      turn_cmd.state_odo = 5;
       break;
    case 5:                     
       // Serial.print("ODO L:");
       // Serial.println(_odo_l); 
-      if(abs(_odo_l) > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+      if(abs(_odo_l) > turn_cmd.target_odo_cnt) {  //Finish turn at _turn_odo_cnt set
          Serial.println("TURN ODO met GOAL");
          _goal_W = 0;
          _goal_V = 0;
-         _turn_state = 6;
-         turn_wait_timer = 0;
+         turn_cmd.state_odo = 6;
+         turn_cmd.wait_cnt = 0;
       }
       break;
    case 6:
-      if(turn_wait_timer++> 100) {
-         _turn_state = 7;
+      if(turn_cmd.wait_cnt++> 100) {
+         turn_cmd.state_odo = 7;
       }
       break;
    case 7:
       _go_flag = true;
-      _turn_state = 0;
+      turn_cmd.state_odo = 0;
    break;
    }
 }
 
 void OMOROBOT_R1::turn_process_timer2(void)
 {
-   switch(_turn_timer_state2){
+   switch(turn_cmd.state_timer2){
    case 0:
       //Do nothing here  
       break;
@@ -98,55 +125,55 @@ void OMOROBOT_R1::turn_process_timer2(void)
       _go_flag = false;
       if(_cmd_speed == 0) {
          //CanBus.set_pl_lift_mode(PL_LIFT_DOWN);
-         _turn_timer_start_millis2 = millis();
-         _turn_timer_state2 = 2;
-         Serial.print("Turn state2:"); Serial.println(_turn_timer_state2);
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer2 = 2;
+         Serial.print("Turn state2:"); Serial.println(turn_cmd.state_timer2);
       }
       break;
    case 2:     //Wait for 2.5 sec
       _goal_W = 0;
       _goal_V = 0;
-      if( (millis() - _turn_timer_start_millis2) > 2500) {
-         _turn_timer_state2 = 3;
-         _turn_timer_start_millis2 = millis();
+      if( (millis() - turn_cmd.timer_start_millis) > 2500) {
+         turn_cmd.state_timer2 = 3;
+         turn_cmd.timer_start_millis = millis();
       }
       break;
    case 3:     //Set the steering to the turn angle
-      _goal_W = _turning_W;
-      _goal_V = 0;
-      if( (millis() - _turn_timer_start_millis2) > 2500) {
-         _turn_timer_start_millis2 = millis();
-         _turn_timer_state2 = 4;
-         Serial.print("Turn state2:"); Serial.println(_turn_timer_state2);
+      _goal_W = turn_cmd.speed_w;
+      _goal_V = turn_cmd.speed_v;
+      if( (millis() - turn_cmd.timer_start_millis) > 2500) {
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer2 = 4;
+         Serial.print("Turn state2:"); Serial.println(turn_cmd.state_timer2);
       }
       break;
    case 4:     //Start moving the wheel for designated turn timer set
-      _goal_W = _turning_W;
-      _goal_V = _turning_V;
-      if( (millis() - _turn_timer_start_millis2) > _turn_timer_set2) {   
-         _turn_timer_start_millis2 = millis();
-         _turn_timer_state2 = 5;
-         Serial.print("Turn state2:"); Serial.println(_turn_timer_state2);
+      _goal_W = turn_cmd.speed_w;
+      _goal_V = turn_cmd.speed_v;
+      if( (millis() - turn_cmd.timer_start_millis) > turn_cmd.target_timer_set) {   
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer2 = 5;
+         Serial.print("Turn state2:"); Serial.println(turn_cmd.state_timer2);
       }
    break;
    case 5:     //Finished turn so stop motion
       _goal_W = 0;
       _goal_V = 0;
-      if( (millis() - _turn_timer_start_millis2) > 2500) {   
-         _turn_timer_start_millis2 = millis();
-         _turn_timer_state2 = 6;
+      if( (millis() - turn_cmd.timer_start_millis) > 2500) {   
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer2 = 6;
       }
    break;
    case 6:
       _go_flag = true;
-      _turn_timer_state2 = 0;
+      turn_cmd.state_timer2 = 0;
       break;
    }
 }
 
 void OMOROBOT_R1::turn_process_timer(void)
 {
-   switch(_turn_timer_state){
+   switch(turn_cmd.state_timer){
    case 0:
       //Do nothing here  
       break;
@@ -154,67 +181,67 @@ void OMOROBOT_R1::turn_process_timer(void)
       _go_flag = false;
       if(_cmd_speed == 0) {
          //CanBus.set_pl_lift_mode(PL_LIFT_DOWN);
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 2;
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 2;
       }
       break;
    case 2:     //Wait for 2.5 sec
       _goal_W = 0;
       _goal_V = 0;
-      if( (millis() - _turn_timer_start_millis) > 2500) {
-         _turn_timer_state = 3;
-         _turn_timer_start_millis = millis();
+      if( (millis() - turn_cmd.timer_start_millis) > 2500) {
+         turn_cmd.state_timer = 3;
+         turn_cmd.timer_start_millis = millis();
       }
       break;
    case 3:     //Set the steering to the turn angle
-      _goal_W = _turning_W;
+      _goal_W = turn_cmd.speed_w;
       _goal_V = 0;
-      if( (millis() - _turn_timer_start_millis) > 2500) {
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 4;
+      if( (millis() - turn_cmd.timer_start_millis) > 2500) {
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 4;
       }
       break;
    case 4:     //Start moving the wheel for designated turn timer set
-      _goal_W = _turning_W;
-      _goal_V = _turning_V;
-      if( (millis() - _turn_timer_start_millis) > _turn_timer_set) {   
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 5;
+      _goal_W = turn_cmd.speed_w;
+      _goal_V = turn_cmd.speed_v;
+      if( (millis() - turn_cmd.timer_start_millis) > turn_cmd.target_timer_set) {   
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 5;
       }
    break;
    case 5:     //Finished turn so stop motion
       _goal_W = 0;
       _goal_V = 0;
-      if((millis() - _turn_timer_start_millis) > 2500) {
+      if((millis() - turn_cmd.timer_start_millis) > 2500) {
          if(_load_unload == PL_LOADING) {
             CanBus.set_pl_lift_mode(PL_LIFT_DOWN);
-            _turn_timer_state = 6;
+            turn_cmd.state_timer = 6;
          } else {
-            _turn_timer_state = 7;
+            turn_cmd.state_timer = 7;
          }
-         _turn_timer_start_millis = millis();
+         turn_cmd.timer_start_millis = millis();
       }
    break;
    case 6:
       _goal_W = 0;
       _goal_V = 0;
-      if((millis() - _turn_timer_start_millis) > 10000) {   //Wait for 10 seconds   for lift down position
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 7;
-         Serial.print("Start lift up/down"); Serial.println(_turn_timer_state);
+      if((millis() - turn_cmd.timer_start_millis) > 10000) {   //Wait for 10 seconds   for lift down position
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 7;
+         Serial.print("Start lift up/down"); Serial.println(turn_cmd.state_timer);
       }
    break;
    case 7:
       _goal_V = - 500;        //Move backwards
       _goal_W = 0;
       if(_is_load_unload_finished) {
-         _turn_timer_state = 8;
-         _turn_timer_start_millis = millis();
-         Serial.print("Load unload finished tag"); Serial.println(_turn_timer_state);
-      } else if((millis() - _turn_timer_start_millis) > 20000) {
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 8;
-         Serial.print("State 8 time_out:"); Serial.println(_turn_timer_state);
+         turn_cmd.state_timer = 8;
+         turn_cmd.timer_start_millis = millis();
+         Serial.print("Load unload finished tag"); Serial.println(turn_cmd.state_timer);
+      } else if((millis() - turn_cmd.timer_start_millis) > 20000) {
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 8;
+         Serial.print("State 8 time_out:"); Serial.println(turn_cmd.state_timer);
       }
    break;
    case 8:
@@ -227,29 +254,29 @@ void OMOROBOT_R1::turn_process_timer(void)
          CanBus.set_pl_lift_mode(PL_LIFT_DOWN);
          //Serial.print("PL_LIFT_DOWN:"); Serial.println(_turn_timer_state);
       }
-      if((millis()-_turn_timer_start_millis) > 12000) {
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 9;
-         Serial.print("State:"); Serial.println(_turn_timer_state);
+      if((millis()-turn_cmd.timer_start_millis) > 12000) {
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 9;
+         Serial.print("State:"); Serial.println(turn_cmd.state_timer);
       }
    break;
    case 9:
       _goal_V = 500;
       _goal_W = 0;
-      if((millis() - _turn_timer_start_millis) > 5000) {
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 10;
-         Serial.print("State:"); Serial.println(_turn_timer_state);
+      if((millis() - turn_cmd.timer_start_millis) > 5000) {
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 10;
+         Serial.print("State:"); Serial.println(turn_cmd.state_timer);
       }
    break;
    case 10:
       _goal_V = 0;
       _goal_W = 0;
-      if((millis() - _turn_timer_start_millis) > 2000) {
-         _turn_timer_start_millis = millis();
-         _turn_timer_state = 0;
+      if((millis() - turn_cmd.timer_start_millis) > 2000) {
+         turn_cmd.timer_start_millis = millis();
+         turn_cmd.state_timer = 0;
          _go_flag = true;
-         Serial.print("Turn timer State finished"); Serial.println(_turn_timer_state);
+         Serial.print("Turn timer State finished"); Serial.println(turn_cmd.state_timer);
       }
    case 11:
 
@@ -297,7 +324,16 @@ void OMOROBOT_R1::begin() {
    _isLineOut = false;
    _lineOut_timeOut_ms = 0;
    _lineOut_timer = 0;
-   _turn_state = 0;
+   turn_cmd.target_odo_cnt = 0;
+   turn_cmd.target_timer_set = 0;
+
+   turn_cmd.speed_w = 0;
+   turn_cmd.speed_v = 0;
+   turn_cmd.state_odo = 0;
+   turn_cmd.state_timer = 0;
+   turn_cmd.state_timer2 = 0;
+   turn_cmd.timer_start_millis = 0;
+   turn_cmd.wait_cnt = 0;
    _odoRequest_millis_last = millis();
 }
 
@@ -319,10 +355,10 @@ void OMOROBOT_R1::spin() {
    }
    if(millis()-_odoRequest_millis_last > 9) {
       CanBus.request_odo(_odo_reset);
-      if(_turn_timer_state>0) {
+      if(turn_cmd.state_timer > 0) {
          this->turn_process_timer();
       }
-      if(_turn_state > 0) {
+      if(this->turn_cmd.state_odo > 0) {
          this->turn_process_odo();
       }
       _odoRequest_millis_last = millis();
@@ -333,11 +369,11 @@ void OMOROBOT_R1::spin() {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
          } else {
-            if(_turn_state == 0) {
+            if(turn_cmd.state_odo == 0) {
                _goal_W = 0;
             }
          } 
-         if(_turn_timer_state2 > 0) {
+         if(turn_cmd.state_timer2 > 0) {
             this->turn_process_timer2();
          }
          if(_vehicle_type == VEHICLE_TYPE_PL153) {
@@ -516,8 +552,10 @@ void OMOROBOT_R1::set_remoteMode(REMOTE_MODE mode)
 /// R1 type vehicle normally turns with V = 0 and W only;
 void OMOROBOT_R1::set_turning_speed(int V, int W)
 {
-   _turning_V = V;
-   _turning_W = W;
+   turn_cmd.speed_v = V;
+   turn_cmd.speed_w = W;
+   // _turning_V = V;
+   // _turning_W = W;
 }
 
 void OMOROBOT_R1::set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING line)
@@ -570,12 +608,11 @@ void OMOROBOT_R1::go(void)
 void OMOROBOT_R1::stop()
 {
    _target_speed = 0;
-   _turn_timer_state = 0;
-   _turn_timer_state2 = 0;
+   turn_cmd.state_timer2 = 0;
+   turn_cmd.state_timer = 0;
    _go_flag = false;
-   _turn_state = 0;
-   //CanBus.set_pl_lift_mode(PL_LIFT_UP);
-   //_lineOut_timeOut_ms = 0;
+   turn_cmd.state_timer = 0;
+   turn_cmd.state_odo = 0;
 }
 /// Only reset target speed to 0 and wait for go()
 void     OMOROBOT_R1::pause()       {  
@@ -588,51 +625,8 @@ bool     OMOROBOT_R1::get_go_flag() {  return _go_flag;}
 int      OMOROBOT_R1::get_odo_l()   {  return _odo_l;}
 int      OMOROBOT_R1::get_odo_r()   {  return _odo_r;}
 double   OMOROBOT_R1::get_linePos() {  return _line_pos;}
-/// Initiate turn process to start with direction and turn odometry count from wheel
-/// Turn angle is determined by odometry count and dependent to wheel size
-void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
-{
-   _turn_state = 1;
-   if(dir == TURN_RIGHT) {
-      _turn_cmd = 0;
-   } else if(dir == TURN_LEFT) {
-      _turn_cmd = 1;
-   }
-   _turn_odo_cnt = turn_odo_cnt;
-   //this->m_turn_process = &this->turn_process_odo;
-}
 
-void OMOROBOT_R1::start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time)
-{
-   _turn_timer_state = 1;
-   _load_unload = load_unload;
-   if(dir == TURN_RIGHT) {
-      _turning_W = 180;
-   } else if(dir == TURN_LEFT) {
-      _turning_W = -180;
-   }
-   _turning_V = speed;
-   _turn_timer_set = time;
-   Serial.print("Set turn timer:");Serial.println(_turn_timer_set);
-   _is_load_unload_finished = false;
-   //this->m_turn_process = &this->turn_process_timer;
-}
-void OMOROBOT_R1::start_turn_timer2(TURN_DIRECTION dir, int speed, int time)
-{
-   if(_turn_timer_state > 0) {
-      return;
-   }
-   _turn_timer_state2 = 1;
-   if(dir == TURN_RIGHT) {
-      _turning_W = -180;
-   } else if(dir == TURN_LEFT) {
-      _turning_W = 180;
-   }
-   _turning_V = speed;
-   _turn_timer_set2 = time;
-   Serial.print("Set turn timer:");Serial.println(_turn_timer_set2);
-   _is_load_unload_finished = false;
-}
+
 
 void OMOROBOT_R1::set_load_unload_stop()
 {

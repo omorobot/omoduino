@@ -41,8 +41,8 @@ enum LINE_FACING{
     FACING_REVERSE
 };
 enum TURN_DIRECTION{
-    TURN_RIGHT,
-    TURN_LEFT
+    TURN_LEFT = 1,
+    TURN_RIGHT = 2
 };
 enum PL_LOAD_UNLOAD{
     PL_LOADING,
@@ -76,7 +76,17 @@ class OMOROBOT_R1
    typedef int (R1_Controller::*m_line_control_event)(double);
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
-    
+   typedef struct TurnCommandStruct{
+      int      target_odo_cnt;   /// turning odo count
+      int      speed_v;   /// Speed for turning;
+      int      speed_w;   /// Rotational velocity for turning
+      int      state_odo;     /// turn odo process state num
+      int      state_timer;   /// turn timer process state num
+      int      state_timer2;
+      uint64_t target_timer_set;
+      uint16_t wait_cnt;      ///wait timer count for delayed process
+      uint64_t timer_start_millis;  ///Timer ms for turning 
+   }TurnCommandStruct;  
    typedef void (*R1_NewDataClientEvent)(R1_MessageType);
    typedef void (*R1_NewTagReadEvent)(Tag_Struct);
    OMOROBOT_R1();
@@ -104,9 +114,8 @@ public:
    double   get_linePos();
    void     set_load_unload_stop();
    void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
-   void     start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt);
+   int      start_turn_odo(int turn_odo_cnt, uint16_t speed);
    void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
-   void     start_turn_timer2(TURN_DIRECTION dir, int speed, int time);
    void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
    void     set_v_accel(uint16_t accel);
    void     set_pid_gains(PID_Type pid);
@@ -126,6 +135,7 @@ private:
    m_line_control_event    m_10ms_line_control;
    //m_process               m_turn_process;
    R1_CanBus               CanBus;
+   TurnCommandStruct       turn_cmd;
    uint64_t                _odoRequest_millis_last;
    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
    bool                    _isLineOut;
@@ -145,17 +155,6 @@ private:
    int       _target_speed;          // target speed when go flag is set
    int       _resume_speed;          // target speed when paused
 
-   uint8_t                 _turn_state;
-   uint8_t                 _turn_timer_state;
-   uint8_t                 _turn_timer_state2;
-   uint8_t                 _turn_cmd;
-   int                      _turn_odo_cnt;
-   int16_t                 _turning_W;
-   int16_t                 _turning_V;
-   uint16_t                _turn_timer_set;
-   uint16_t                _turn_timer_set2;
-   uint64_t                _turn_timer_start_millis;
-   uint64_t                _turn_timer_start_millis2;
    PL_LOAD_UNLOAD          _load_unload;
    bool                    _is_load_unload_finished;
    bool                    _odo_reset;
