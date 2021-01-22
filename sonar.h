@@ -48,7 +48,6 @@ private:
    int         _pin_echo;
    int         _pin_analog;
    int         _detection_range;
-   //bool        _detected;
    bool        _enabled;
 };
 

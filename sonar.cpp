@@ -97,7 +97,6 @@ bool SONAR::detected() {
    }
 #ifdef SONAR_USE_AVERAGE_FILTER
    if(this->_measure_cnt < SONAR_FILTER_NUM+5) {
-      Serial.print("Sonar cnt");Serial.println(this->_measure_cnt);
       return false;
    }
 #endif
