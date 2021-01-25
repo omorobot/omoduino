@@ -16,9 +16,14 @@ void OMOROBOT_R1::set_speed(int V)
 {
    _target_speed = V;
 }
-/// Initiate turn process with odometer count
-/// (+) turn_odo_cnt turn to left vs (-) turn_odo_cnt turns to right
-/// speed is for designated turning speed
+
+/**
+ * @brief Initiate turn process with odometer count
+ * 
+ * @param turn_odo_cnt (+) turn_odo_cnt turn to left vs (-) turn_odo_cnt turns to right
+ * @param speed speed is for designated turning speed
+ * @return int 
+ */
 int OMOROBOT_R1::start_turn_odo(int turn_odo_cnt, uint16_t speed)
 {
    if(turn_odo_cnt > 0) {              //Positive turn odo cnt means turn to left
@@ -37,6 +42,14 @@ int OMOROBOT_R1::start_turn_odo(int turn_odo_cnt, uint16_t speed)
    //this->m_turn_process = &this->turn_process_odo;
 }
 
+/**
+ * @brief Initiate turn process with timer for PL-1500 type vehicle
+ * 
+ * @param load_unload 
+ * @param dir Turn direction
+ * @param speed Speed for motor
+ * @param time Time to turn
+ */
 void OMOROBOT_R1::start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time)
 {
    this->turn_cmd.state_timer = 1;
