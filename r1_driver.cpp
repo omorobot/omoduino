@@ -41,8 +41,8 @@ void OMOROBOT_R1::turn_process_odo(void)
       break;
    case 2:
    {
-      Serial.print("ODO L:");
-      Serial.println(_odo_l); 
+      //Serial.print("ODO L:");
+      //Serial.println(_odo_l); 
       if(abs(_odo_l) < 10) {   //Check odometry reset
          _odo_reset = false;
          turn_wait_timer = 0;
@@ -56,7 +56,7 @@ void OMOROBOT_R1::turn_process_odo(void)
       turn_wait_timer++;
       if(turn_wait_timer > 100) {
          _turn_state = 4;
-         Serial.println("TURN Start");
+         //Serial.println("TURN Start");
       }
       break;
    }
