@@ -31,7 +31,7 @@ SONAR::SONAR(int pin_trigger, int pin_echo) {
 double SONAR::measure_cm() {
    double distance;
    if(!this->_enabled) {
-      _distance_prev = distance = -1.0;
+      this->distance_cm = distance = -1.0;
       return distance;
    }
    if(sonarType == SONAR_TYPE_TRIGGER_ECHO) {
@@ -87,8 +87,8 @@ bool SONAR::detected() {
       return false;
    }
 #endif
-   if(_distance_prev > 0.0) {
-      if(_distance_prev < _detection_range) {
+   if(this->distance_cm > 0.0) {
+      if(this->distance_cm < this->_detection_range) {
          detected = true;
       }
       else {
