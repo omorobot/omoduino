@@ -87,7 +87,7 @@ bool SONAR::detected() {
       return false;
    }
 #endif
-   if(this->distance_cm > 0.0) {
+   if(this->distance_cm >= 0.0) {
       if(this->distance_cm < this->_detection_range) {
          detected = true;
       }
@@ -106,4 +106,8 @@ void SONAR::set_range(int range) {
 
 void SONAR::set_enable(bool en) {
    _enabled = en;
+}
+
+void SONAR::set_distance(int cm){
+   this->distance_cm = cm;
 }

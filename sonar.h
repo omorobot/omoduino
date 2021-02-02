@@ -14,7 +14,7 @@
 #ifndef _SONAR_H_
 #define _SONAR_H_
 
-#define SONAR_USE_AVERAGE_FILTER
+//#define SONAR_USE_AVERAGE_FILTER
 //#define SONAR_USE_COMPLEMENTARY_FILTER
 #ifdef SONAR_USE_AVERAGE_FILTER
 #define SONAR_FILTER_NUM         10
@@ -34,6 +34,7 @@ public:
    bool        detected();
    void        set_range(int cm);
    void        set_enable(bool);
+   void        set_distance(int cm);
    //void        set_analogRange(int);
 private:
    SonarType   sonarType;
