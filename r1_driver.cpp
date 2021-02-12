@@ -7,7 +7,11 @@
 volatile int       _lineOut_timeOut_ms;
 volatile uint8_t   _tag_data_prev[4];
 int turn_wait_timer = 0;
-
+/**
+ * @brief Get target speed set
+ * 
+ * @return int mm/s
+ */
 int OMOROBOT_R1::get_target_speed()
 {
    return _target_speed;
@@ -127,7 +131,10 @@ void OMOROBOT_R1::turn_process_odo(void)
    break;
    }
 }
-
+/**
+ * @brief Turn process with timer2 value
+ * 
+ */
 void OMOROBOT_R1::turn_process_timer2(void)
 {
    switch(turn_cmd.state_timer2){
@@ -183,7 +190,10 @@ void OMOROBOT_R1::turn_process_timer2(void)
       break;
    }
 }
-
+/**
+ * @brief Turn process with timer
+ * 
+ */
 void OMOROBOT_R1::turn_process_timer(void)
 {
    switch(turn_cmd.state_timer){
@@ -349,8 +359,17 @@ void OMOROBOT_R1::begin() {
    turn_cmd.wait_cnt = 0;
    _odoRequest_millis_last = millis();
 }
-
+/**
+ * @brief Register callback function for new data event
+ * 
+ * @param cbEvent 
+ */
 void OMOROBOT_R1::onNewData(R1_NewDataClientEvent cbEvent){ _cbDataEvent = cbEvent;}
+/**
+ * @brief Register callback function for new TAG message event
+ * 
+ * @param cbEvent 
+ */
 void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent){ _cbTagEvent = cbEvent;}
 /**
 * @brief R1 main loop
@@ -419,6 +438,11 @@ void OMOROBOT_R1::spin() {
       _100ms_loop_millis_last = millis();
    }
 }
+/**
+ * @brief Set wait timer in ms to stop vehicle when there is no line detected
+ * 
+ * @param ms 
+ */
 void OMOROBOT_R1::set_lineout_delay(int ms)
 {
    _lineOut_timeOut_ms = ms;
@@ -473,13 +497,13 @@ void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
    if(can_rx.data[0] == 0x02) {
    _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
    _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
-   //  Serial.print("ODO:");
-   //  Serial.print(can_rx.data[0],HEX);Serial.print(",");
-   //  Serial.print(_odo_r);Serial.print(",");
-   //  Serial.print(_odo_l);Serial.println(",");
    }
 }
-
+/**
+ * @brief Process new can message event from CAN-bus module
+ * 
+ * @param _canRxMsg 
+ */
 void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
 {
    int senderID = (_canRxMsg.can_id>>4);
@@ -513,7 +537,12 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
       
    }
 }
-
+/**
+ * @brief Control motor driver with desired V and W
+ * 
+ * @param V vehicle speed in mm/s
+ * @param W vehicle speed in mrad/s
+ */
 void OMOROBOT_R1::control_motor_VW(int V, int W) {
    V = V*_v_dir;
    W = W*_w_dir;
@@ -525,11 +554,19 @@ void OMOROBOT_R1::control_motor_VW(int V, int W) {
       CanBus.cmd_VW(V, W);
    }
 }
-
+/**
+ * @brief Request odometry to motor driver
+ * 
+ */
 void OMOROBOT_R1::request_odo() {
    CanBus.request_odo(_odo_reset);
 }
-
+/**
+ * @brief Set motor drive mode
+ * 
+ * @param type Supporting vehicle type R1 or PL153
+ * @param mode Speed control or line control mode
+ */
 void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
 {
    _vehicle_type = type;
@@ -556,21 +593,33 @@ void OMOROBOT_R1::set_driveMode(R1_VEHICLE_TYPE type, DRIVE_MODE mode)
       //_10ms_loop_millis_last = millis();
    }
 }
-
+/**
+ * @brief Set remote mode
+ * 
+ * @param mode 
+ */
 void OMOROBOT_R1::set_remoteMode(REMOTE_MODE mode)
 {
    this->_remote_mode = mode;
 }
-/// Sets turning speed and rate of change of direction
-/// R1 type vehicle normally turns with V = 0 and W only;
+
+/**
+ * @brief Sets turning speed and rate of change of direction
+ * R1 type vehicle normally turns with V = 0 and W only;
+ * @param V 
+ * @param W 
+ */
 void OMOROBOT_R1::set_turning_speed(int V, int W)
 {
    turn_cmd.speed_v = V;
    turn_cmd.speed_w = W;
-   // _turning_V = V;
-   // _turning_W = W;
 }
-
+/**
+ * @brief Sets drive direction of the vehicle 
+ * 
+ * @param dir Move forward ro reversed direction
+ * @param line Whether the line sensor is facing forward or reversed
+ */
 void OMOROBOT_R1::set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING line)
 {
    if(dir == DIRECTION_FORWARD) {
@@ -584,18 +633,42 @@ void OMOROBOT_R1::set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING line)
       _w_dir = -1;
    }
 }
-
+/**
+ * @brief Set time to stop when lineout detected in ms
+ * 
+ * @param ms Desired time to stop the vehicle
+ */
 void OMOROBOT_R1::set_lineoutTime(int ms) { _lineOut_timeOut_ms = ms; }
+/**
+ * @brief Set PL153 vehicle's lift mode
+ * 
+ * @param mode 
+ */
 void OMOROBOT_R1::set_pl_lift_mode(PL_LIFT_MODE_TYPE mode) {
    CanBus.set_pl_lift_mode(mode);
 }
+/**
+ * @brief Set desired acceleration for controlling the vehicle
+ * 
+ * @param accel 
+ */
 void OMOROBOT_R1::set_v_accel(uint16_t accel) {
    Controller.set_v_accel(accel);
 }
+/**
+ * @brief Set desired PID gains setting
+ * 
+ * @param pid 
+ */
 void OMOROBOT_R1::set_pid_gains(PID_Type pid) {
    Controller.set_pid_gain_line(pid);
 }
-/// Start vehicle with target speed
+
+/**
+ * @brief Start vehicle with target speed
+ * 
+ * @param target_speed 
+ */
 void OMOROBOT_R1::go(int target_speed)
 {
    if(target_speed) {
@@ -608,8 +681,12 @@ void OMOROBOT_R1::go(int target_speed)
    }
    _go_flag = true;
 }
-/// Resume vehicle motion when paused. 
-/// If vehicle is stopped, calling this wouldn't start the vehicle
+
+/**
+ * @brief Resume vehicle motion when paused. 
+ * If vehicle is stopped, calling this wouldn't start the vehicle
+ * 
+ */
 void OMOROBOT_R1::go(void)
 {
    _lineOut_timer = 0;
@@ -617,7 +694,12 @@ void OMOROBOT_R1::go(void)
    Controller.set_target_v(_target_speed);
    _go_flag = true;
 }
-/// Clear go flag and stop the vehicle
+
+/**
+ * @brief Completely stop the vehicle. 
+ * reset _target_speed to 0, _go_flag = false
+ * 
+ */
 void OMOROBOT_R1::stop()
 {
    _target_speed = 0;
@@ -627,7 +709,11 @@ void OMOROBOT_R1::stop()
    turn_cmd.state_timer = 0;
    turn_cmd.state_odo = 0;
 }
-/// Only reset target speed to 0 and wait for go()
+
+/**
+ * @brief Only reset target speed to 0 and wait for go()
+ * 
+ */
 void     OMOROBOT_R1::pause()       {  
    _target_speed = 0; 
    //Serial.println("R1 paused");

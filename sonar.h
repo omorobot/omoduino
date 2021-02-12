@@ -1,7 +1,7 @@
 /**
  * @file "sonar.h"
  * 
- * @brief Interface for measuring distance using HC-SR04 Ultrasonic Sensor 
+ * @brief HC-SR04 및 MAX Sonar와 같은 거리 측정 센서에 대한 정의. Interface for measuring distance using HC-SR04 Ultrasonic Sensor 
  * For more info, please visit www.omorobot.com 
  *  
  * @License
@@ -21,6 +21,10 @@
 #define SONAR_FILTER_NUM         10
 #endif
 
+/**
+ * @brief 거리 측정 센서 클래스
+ * 
+ */
 class SONAR
 {
    typedef enum {

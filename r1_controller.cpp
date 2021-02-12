@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include "r1_controller.h"
 
+/**
+ * @brief Construct a new r1 controller::r1 controller object
+ * 
+ */
 R1_Controller::R1_Controller()
 {
    _pid_l.Kp =             PID_LINE_KP_DEFAULT;
@@ -12,6 +16,11 @@ R1_Controller::R1_Controller()
    _line_filter_alpha =    PID_LINE_FILTER_ALPHA_DEFAULT;
    _v_accel =              V_CONTROL_ACCEL_DEFAULT;
 }
+/**
+ * @brief Initialize PID gain setting for line tracer type vehicle
+ * 
+ * @param pid PID gains
+ */
 void  R1_Controller::set_pid_gain_line(PID_Type pid)
 {
    _pid_l.Kp = pid.Kp;
@@ -22,18 +31,39 @@ void  R1_Controller::set_pid_gain_line(PID_Type pid)
    _pid_l.error_prev = 0.0;
    _pid_l.error_i = 0.0;
 }
+/**
+ * @brief Reset integral error
+ * 
+ */
 void  R1_Controller::reset_pid_line(void)
 {
    _pid_l.error_i = 0.0;
 }
+/**
+ * @brief Set target speed
+ * 
+ * @param v 
+ */
 void  R1_Controller::set_target_v(int v)
 {
    _v_target = v;
 }
+/**
+ * @brief Set target accelleration
+ * 
+ * @param accel 
+ */
 void  R1_Controller::set_v_accel(int accel)
 {
    _v_accel = accel;
 }
+/**
+ * @brief Speed control
+ * 
+ * @param cmd_v target speed V mm/s
+ * @param go_flag true to set go vehicle
+ * @return int commandded v mm/s
+ */
 int   R1_Controller::speed_control(int cmd_v, bool go_flag)
 {
    if(go_flag) {
@@ -53,7 +83,14 @@ int   R1_Controller::speed_control(int cmd_v, bool go_flag)
    }
    return cmd_v;
 }
-
+/**
+ * @brief 
+ * 
+ * @param origin_val 
+ * @param target_val 
+ * @param increase 
+ * @return int 
+ */
 int   R1_Controller::speed_w_control(int origin_val, int target_val, int increase)
 {
    if(target_val > origin_val){
@@ -71,6 +108,12 @@ int   R1_Controller::speed_w_control(int origin_val, int target_val, int increas
    }
 
 }
+/**
+ * @brief Compute desired W mrad/s with line position as reference
+ * 
+ * @param linePos Detected line position from -10.0 to +10.0
+ * @return int Desired W mrad/s
+ */
 int   R1_Controller::line_control_vw(double linePos)
 {
    double dt = (double)(millis()-_pid_l.last_update_millis)/1000.0;
@@ -87,7 +130,12 @@ int   R1_Controller::line_control_vw(double linePos)
 
    return (int)output;
 }
-
+/**
+ * @brief Compute desired steering angle with line position as reference
+ * 
+ * @param linePos Detected line position from -10.0 to +10.0
+ * @return int Desired steering angle
+ */
 int   R1_Controller::line_control_angle(double linePos)
 {
    double error = linePos*_line_filter_alpha + (1.0-_line_filter_alpha)*_pid_l.error_prev;

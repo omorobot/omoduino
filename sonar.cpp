@@ -6,7 +6,11 @@ double      _alpha = 0.85;       //Complementary filter value
 #endif
 //int         _detection_range = 40;
 double      _analog_to_cm_gain = 1.0;
-
+/**
+ * @brief Construct a new SONAR::SONAR object as analog type sensor
+ * 
+ * @param analogPin analog pin
+ */
 SONAR::SONAR(int analogPin)
 {
    sonarType = SONAR_TYPE_ANALOG;
@@ -16,7 +20,12 @@ SONAR::SONAR(int analogPin)
    _enabled = true;
    this->_measure_cnt = 0;
 }
-
+/**
+ * @brief Construct a new SONAR::SONAR object as trigger echo type sensor
+ * 
+ * @param pin_trigger Trigger pin
+ * @param pin_echo Echo pin
+ */
 SONAR::SONAR(int pin_trigger, int pin_echo) {
    sonarType = SONAR_TYPE_TRIGGER_ECHO;
    _pin_trigger = pin_trigger;
@@ -27,7 +36,11 @@ SONAR::SONAR(int pin_trigger, int pin_echo) {
    //_detected = false;
    _enabled = true;
 }
-
+/**
+ * @brief Measure distance in CM from sonar
+ * 
+ * @return double distance in cm
+ */
 double SONAR::measure_cm() {
    double distance;
    if(!this->_enabled) {
@@ -75,7 +88,11 @@ double SONAR::measure_cm() {
       return distance;
    }
 }
-
+/**
+ * @brief Get the latest sensor reading
+ * 
+ * @return double distance in cm
+ */
 double SONAR::get_distance()
 {
 #ifdef SONAR_USE_AVERAGE_FILTER
@@ -89,7 +106,12 @@ double SONAR::get_distance()
 #endif
 }
 
-
+/**
+ * @brief Check if measured distance from object below minimum range
+ * 
+ * @return true if object within detection range
+ * @return false if object beyond detction range
+ */
 bool SONAR::detected() {
    bool detected = false;
    if(!_enabled) {
@@ -116,7 +138,11 @@ bool SONAR::detected() {
 void SONAR::set_range(int range) {
    this->_detection_range = range;
 }
-
+/**
+ * @brief Enable sonar
+ * 
+ * @param en 
+ */
 void SONAR::set_enable(bool en) {
    _enabled = en;
 }

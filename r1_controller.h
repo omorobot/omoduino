@@ -1,6 +1,6 @@
 /**
  * @file r1_controller.h 
- * @brief R1 driver library is for driving OMO-R1 robot along with other OMOROBOT's proprietary sensor modules using CAN transceiver such as MCP2515 
+ * @brief R1 구동제어기의 라인 Following 알고리즘 및 제어 방법을 정의 
  * For more info, please visit www.omorobot.com 
  *  
  * @License

@@ -48,7 +48,10 @@ enum PL_LOAD_UNLOAD{
     PL_LOADING,
     PL_UNLOADING
 };
-
+/**
+ * @brief Types of TAGs supported
+ * 
+ */
 enum TAG_Type{
     TAG_None                = 0,
     TAG_DEPOT               = 0xA0,     //160
@@ -71,17 +74,21 @@ typedef struct Tag_Struct{
     TAG_Type    type;
 } Tag_Struct;
 
+/**
+ * @brief OMOROBOT Motor driver class
+ * 
+ */
 class OMOROBOT_R1
 {
    typedef int (R1_Controller::*m_line_control_event)(double);
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
    typedef struct TurnCommandStruct{
-      int      target_odo_cnt;   /// turning odo count
-      int      speed_v;   /// Speed for turning;
-      int      speed_w;   /// Rotational velocity for turning
-      int      state_odo;     /// turn odo process state num
-      int      state_timer;   /// turn timer process state num
+      int      target_odo_cnt;  /// turning odo count
+      int      speed_v;         /// Speed for turning;
+      int      speed_w;         /// Rotational velocity for turning
+      int      state_odo;       /// turn odo process state num
+      int      state_timer;     /// turn timer process state num
       int      state_timer2;
       uint64_t target_timer_set;
       uint16_t wait_cnt;      ///wait timer count for delayed process
@@ -151,9 +158,9 @@ private:
    double                  _line_pos_last;
 
    int       _lineOut_timer;
-   int       _lineOut_timeOut_ms;
-   int       _target_speed;          // target speed when go flag is set
-   int       _resume_speed;          // target speed when paused
+   int       _lineOut_timeOut_ms;    /// Wait time to stop when line out detected
+   int       _target_speed;          /// target speed when go flag is set
+   int       _resume_speed;          /// target speed when paused
 
    PL_LOAD_UNLOAD          _load_unload;
    bool                    _is_load_unload_finished;
@@ -162,10 +169,10 @@ private:
    int                     _odo_r;
 
    uint64_t                _5ms_loop_millis_last;
-   uint64_t                _loop_control_next_millis;//_10ms_loop_millis_last;
+   uint64_t                _loop_control_next_millis; /// _10ms_loop_millis_last;
 
    uint64_t                _100ms_loop_millis_last;
-   bool                    _can_rx_extern = false;             //Can rx read performed externally
+   bool                    _can_rx_extern = false;   //Can rx read performed externally
    
    uint16_t                _same_tag_reset_timer;
    Tag_Struct              _new_tagStr;           //Turn odo count to stop turn

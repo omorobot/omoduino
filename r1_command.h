@@ -1,6 +1,6 @@
 /**
  * @file r1_command.h 
- * @brief R1 driver library is for driving OMO-R1 robot along with other OMOROBOT's proprietary sensor modules using CAN transceiver such as MCP2515 
+ * @brief R1 구동 드라이버 제어를 위한 CAN 버스 명령어에 대한 정의
  * For more info, please visit www.omorobot.com 
  *  
  * @License
