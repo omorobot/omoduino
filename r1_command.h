@@ -28,13 +28,19 @@
 #define CAN_MOTOR_CMD_PWM        0x88
 
 enum R1_VEHICLE_TYPE {
+   /// R1 형 모터 드라이버
    VEHICLE_TYPE_R1,
+   /// PL153형 모터 드라이버
    VEHICLE_TYPE_PL153
 };
 enum R1_CONTROL_MODE_TYPE{
+   /// V mm/s, mrad/s 제어방식 구동
    CONTROL_MODE_VW,
+   /// 좌/우 바퀴 속도 mm/s 제어방식 구동
    CONTROL_MODE_DIFFV,
+   /// 좌/우 바퀴 RPM 제어방식 구동
    CONTROL_MODE_RPM,
+   /// 전/후진 속도 및 조향각 제어방식 구동
    CONTROL_MODE_DAC_ANGLE
 };
 enum PL_LIFT_MODE_TYPE {
@@ -71,16 +77,21 @@ public:
 
 private:
    typedef struct CanCommandType{
-      uint8_t     cmd_byte;   /// Command byte
-      uint16_t    data_1;       /// command data
+      /// 제어명령
+      uint8_t     cmd_byte;   
+      /// 제어 데이터 1
+      uint16_t    data_1;  
+      /// 제어 데이터 2     
       uint16_t    data_2;
       uint8_t     aux_byte;
    }CanCommandType;
 
    MCP2515*                _mcp2515;
    R1_NewCanRxEvent        _cbCanRxEvent;
-   OMOROBOT_R1*            _cbObj;             //Ojbect to hold OMOROBOT_R1 class
-   R1_VEHICLE_TYPE         _vehicle_type;      //Vehicle type
+   /// Ojbect to hold OMOROBOT_R1 class
+   OMOROBOT_R1*            _cbObj;             
+   /// Vehicle type
+   R1_VEHICLE_TYPE         _vehicle_type;      
 
    struct can_frame        _canRxMsg;
    R1_CONTROL_MODE_TYPE    _control_mode;

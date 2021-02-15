@@ -24,53 +24,75 @@
 class MCP2515;
 
 enum DRIVE_MODE{
+    /// 기본 구동 제어 모드
     DRIVE_MODE_DEFAULT,
-    DRIVE_MODE_LINETRACER        ///Set to line tracer mode when Line sensor available
+    /// 라인센서가 있는 경우 이 모드로 설정하면 라인 Following 모드로 제어됨
+    DRIVE_MODE_LINETRACER        
 };
+
 enum REMOTE_MODE{
    REMOTE_NONE,
    REMOTE_SBUS,
    REMOTE_JOY
 };
+
 enum DRIVE_DIRECTION{
+    /// 속도 명령의 +가 전진 방향인 경우
     DIRECTION_FORWARD,
+    /// 속도 명령의 +가 후진 방향인 경우
     DIRECTION_REVERSE
 };
+
 enum LINE_FACING{
+    /// 라인센서가 진행 방향으로 설치된 경우
     FACING_FORWARD,
+    /// 라인센서가 진행 방향에 반대 방향으로 설치된 경우
     FACING_REVERSE
 };
+
 enum TURN_DIRECTION{
+    /// 좌회전
     TURN_LEFT = 1,
+    /// 우회전
     TURN_RIGHT = 2
 };
+
 enum PL_LOAD_UNLOAD{
     PL_LOADING,
     PL_UNLOADING
 };
-/**
- * @brief Types of TAGs supported
- * 
- */
+/// 지원하는 TAG 종류
 enum TAG_Type{
     TAG_None                = 0,
+    /// DEPOT
     TAG_DEPOT               = 0xA0,     //160
+    /// POU
     TAG_POU                 = 0xA2,     //162
+    /// 어프로치 태그
     TAG_APPROACH            = 0xA3,     //163
+    /// 유턴 동작
     TAG_UTURN               = 0xB0,     //176
+    /// 리프트 동작 태그 (PL153 타입)
     TAG_LIFT                = 0xB1,     //177
+    /// PL153형 턴 태그
     TAG_TURN_PL             = 0xB2,     //178
     TAG_LOAD_UNLOAD_STOP    = 0xB3,     //179
     TAG_TURN_PL2            = 0xB4,     //180
     TAG_CIN                 = 0xC1,     //193
     TAG_COUT                = 0xC0,     //192
+    /// 속도 설정 태그
     TAG_SPEED               = 0xE0,     //224
+    /// 초음파 On/Off 태그
     TAG_SONAR               = 0xE2,     //226
+    /// 로봇 정지 및 대기 태그
     TAG_READY               = 0xFE      //254
 };
 
+/// 태그 정보를 담은 구조체
 typedef struct Tag_Struct{
+    /// 태그 바이트
     uint8_t     bytes[4];
+    /// 태그 종류
     TAG_Type    type;
 } Tag_Struct;
 
@@ -84,15 +106,22 @@ class OMOROBOT_R1
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
    typedef struct TurnCommandStruct{
-      int      target_odo_cnt;  /// turning odo count
-      int      speed_v;         /// Speed for turning;
-      int      speed_w;         /// Rotational velocity for turning
-      int      state_odo;       /// turn odo process state num
-      int      state_timer;     /// turn timer process state num
+       /// turning odo count
+      int      target_odo_cnt;  
+      /// Speed for turning;
+      int      speed_v;         
+      /// Rotational velocity for turning
+      int      speed_w;         
+      /// turn odo process state num
+      int      state_odo;       
+      /// turn timer process state num
+      int      state_timer;     
       int      state_timer2;
       uint64_t target_timer_set;
-      uint16_t wait_cnt;      ///wait timer count for delayed process
-      uint64_t timer_start_millis;  ///Timer ms for turning 
+      ///wait timer count for delayed process
+      uint16_t wait_cnt;      
+      ///Timer ms for turning 
+      uint64_t timer_start_millis;  
    }TurnCommandStruct;  
    typedef void (*R1_NewDataClientEvent)(R1_MessageType);
    typedef void (*R1_NewTagReadEvent)(Tag_Struct);
@@ -158,9 +187,12 @@ private:
    double                  _line_pos_last;
 
    int       _lineOut_timer;
-   int       _lineOut_timeOut_ms;    /// Wait time to stop when line out detected
-   int       _target_speed;          /// target speed when go flag is set
-   int       _resume_speed;          /// target speed when paused
+   /// Wait time to stop when line out detected
+   int       _lineOut_timeOut_ms;    
+   /// target speed when go flag is set
+   int       _target_speed;          
+   /// target speed when paused
+   int       _resume_speed;          
 
    PL_LOAD_UNLOAD          _load_unload;
    bool                    _is_load_unload_finished;
@@ -169,13 +201,16 @@ private:
    int                     _odo_r;
 
    uint64_t                _5ms_loop_millis_last;
-   uint64_t                _loop_control_next_millis; /// _10ms_loop_millis_last;
+   /// _10ms_loop_millis_last;
+   uint64_t                _loop_control_next_millis; 
 
    uint64_t                _100ms_loop_millis_last;
-   bool                    _can_rx_extern = false;   //Can rx read performed externally
+   //Can rx read performed externally
+   bool                    _can_rx_extern = false;   
    
    uint16_t                _same_tag_reset_timer;
-   Tag_Struct              _new_tagStr;           //Turn odo count to stop turn
+    //Turn odo count to stop turn
+   Tag_Struct              _new_tagStr;          
    struct can_frame _canRxMsg;
    REMOTE_MODE             _remote_mode;
    void newCanRxEvent(can_frame can_rx);
