@@ -14,7 +14,7 @@
 #ifndef _SONAR_H_
 #define _SONAR_H_
 
-//#define SONAR_USE_AVERAGE_FILTER
+#define SONAR_USE_AVERAGE_FILTER
 //#define SONAR_USE_COMPLEMENTARY_FILTER
 #ifdef SONAR_USE_AVERAGE_FILTER
 #define SONAR_FILTER_NUM         10
@@ -24,11 +24,13 @@ class SONAR
 {
    typedef enum {
       SONAR_TYPE_TRIGGER_ECHO = 0,        //Sonar type is trigger, echo type
-      SONAR_TYPE_ANALOG       = 1         //Sonar type is analog
+      SONAR_TYPE_ANALOG       = 1,        //Sonar type is analog
+      SONAR_TYPE_TFLIDAR      = 2         //Sonar type is LIDAR
    }SonarType;
 public:
    SONAR(int analogPin);
    SONAR(int pin_trigger, int pin_echo);
+   SONAR(void);
    double      measure_cm(void);
    int         measure_analog(void);
    bool        detected();
@@ -43,6 +45,7 @@ private:
    int         _distance_arr[SONAR_FILTER_NUM];
 #endif
    int         distance_cm;
+   int         distnace_lidar;
    int         _detection_range;
    uint32_t    _measure_cnt;
    int         _pin_trigger;

@@ -28,6 +28,12 @@ SONAR::SONAR(int pin_trigger, int pin_echo) {
    _enabled = true;
 }
 
+SONAR::SONAR(void){
+   sonarType = SONAR_TYPE_TFLIDAR;
+   _distance_prev = 0;
+   _enabled = true;
+}
+
 double SONAR::measure_cm() {
    double distance;
    if(!this->_enabled) {
@@ -73,6 +79,19 @@ double SONAR::measure_cm() {
 #endif
       this->distance_cm = (int)distance;
       return distance;
+   } else if(sonarType == SONAR_TYPE_TFLIDAR){
+#ifdef SONAR_USE_AVERAGE_FILTER
+      int sum = 0;
+      for(int i=0; i<(SONAR_FILTER_NUM-1);i++){
+         _distance_arr[i] = _distance_arr[i+1];
+         sum += _distance_arr[i];
+      }
+      _distance_arr[SONAR_FILTER_NUM-1] = distnace_lidar;
+      sum += _distance_arr[SONAR_FILTER_NUM-1];
+      distance = sum /SONAR_FILTER_NUM;
+#endif
+      this->distance_cm = (int)distance;
+      return distance;
    }
 }
 
@@ -109,5 +128,5 @@ void SONAR::set_enable(bool en) {
 }
 
 void SONAR::set_distance(int cm){
-   this->distance_cm = cm;
+   this->distnace_lidar = cm;
 }
