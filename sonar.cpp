@@ -80,6 +80,7 @@ double SONAR::measure_cm() {
       this->distance_cm = (int)distance;
       return distance;
    } else if(sonarType == SONAR_TYPE_TFLIDAR){
+      this->_measure_cnt++;
 #ifdef SONAR_USE_AVERAGE_FILTER
       int sum = 0;
       for(int i=0; i<(SONAR_FILTER_NUM-1);i++){
@@ -90,8 +91,11 @@ double SONAR::measure_cm() {
       sum += _distance_arr[SONAR_FILTER_NUM-1];
       distance = sum /SONAR_FILTER_NUM;
 #endif
-      this->distance_cm = (int)distance;
-      return distance;
+      this->distance_cm = (int)distnace_lidar;
+      if(distnace_lidar == 0){
+         distnace_lidar = 1000;
+      }
+      return distnace_lidar;
    }
 }
 
