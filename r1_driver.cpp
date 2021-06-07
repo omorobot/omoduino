@@ -495,8 +495,11 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
 {
    if(can_rx.data[0] == 0x02) {
-   _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
-   _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
+      _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
+      _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
+   } else if(can_rx.data[0] == 0x03) {
+      _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8)|(can_rx.data[3]<<16));
+      _odo_l = (can_rx.data[4]|(can_rx.data[5]<<8)|(can_rx.data[6]<<16));
    }
 }
 /**
