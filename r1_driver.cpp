@@ -5,6 +5,7 @@
 #include <string.h>
 
 volatile int       _lineOut_timeOut_ms;
+int turn_wait_timer = 0;
 
 int OMOROBOT_R1::get_target_speed()
 {
@@ -17,6 +18,10 @@ void OMOROBOT_R1::set_speed(int V)
 
 void OMOROBOT_R1::turn_process_odo(void)
 {
+   if(_turn_state > 0){
+      Serial.print("odo:");
+      Serial.println(_odo_l);
+   }
    switch(_turn_state){
    case 0:
       //Do nothing here  
@@ -30,11 +35,18 @@ void OMOROBOT_R1::turn_process_odo(void)
    case 2:
       _odo_reset = true;
       if(_odo_l == 0) {   //Check odometry reset
+         turn_wait_timer = 0;
          _turn_state = 3;
          _odo_reset = false;
       }
       break;
-   case 3:               //Now start to turn
+   case 3:
+      if(turn_wait_timer++ > 200){
+         _turn_state = 4;
+         turn_wait_timer = 0;
+      }
+      break;
+   case 4:               //Now start to turn
       _odo_reset = false;     //Keep odo data
       if(_turn_cmd == 0) {    //For right turn
          _goal_W = -_turning_W;
@@ -42,16 +54,16 @@ void OMOROBOT_R1::turn_process_odo(void)
       } else if(_turn_cmd == 1) { //For left turn
          _goal_W = _turning_W;
       }
-      _turn_state = 4;
+      _turn_state = 5;
       break;
-   case 4:                      
-      if(_odo_l > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+   case 5:         
+      if(abs(_odo_l) > _turn_odo_cnt) {  //Finish turn at _turn_odo_cnt set
          _goal_W = 0;
          _goal_V = 0;
-         _turn_state = 5;
+         _turn_state = 6;
       }
       break;
-   case 5:
+   case 6:
       _go_flag = true;
       _turn_state = 0;
    break;
@@ -296,7 +308,9 @@ void OMOROBOT_R1::spin() {
          if(_go_flag) {
             _goal_W = (Controller.*this->m_10ms_line_control)(_line_pos);
          } else {
-            _goal_W = 0;
+            if(_turn_state == 0) {
+               _goal_W = 0;
+            }
          }
          // if(this->m_turn_process) {
          //    this->m_turn_process;
@@ -354,7 +368,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
    switch(can_rx.data[0]) {
    case 1:   //Line detect
       _isLineOut = false;
-      _line_pos = (double)can_rx.data[1];
+      _line_pos = (int8_t)can_rx.data[1];
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;
       for(i =0; i<4; i++) {
@@ -394,8 +408,8 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 */
 void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
 {
-   _odo_r = (can_rx.data[1]|(can_rx.data[2]<<8));
-   _odo_l = (can_rx.data[3]|(can_rx.data[4]<<8));
+   _odo_r = ((can_rx.data[1]<<8)|(can_rx.data[2]));
+   _odo_l = ((can_rx.data[3]<<8)|(can_rx.data[4]));
 }
 
 void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
@@ -410,6 +424,8 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
          _lineDetect_millis_last = millis();    //Update line detection time
          _lineOut_timer = 0;
          _cbDataEvent(R1MSG_LINEPOS);
+         Serial.print("Line pos : ");
+         Serial.println(_line_pos);
          break;
       case 2:   //No line
          _isLineOut = true;
@@ -560,6 +576,7 @@ int      OMOROBOT_R1::get_lineout_flag() {return _isLineOut;}
 void OMOROBOT_R1::start_turn_odo(TURN_DIRECTION dir, int turn_odo_cnt)
 {
    _turn_state = 1;
+   turn_wait_timer = 0;
    if(dir == TURN_RIGHT) {
       _turn_cmd = 0;
    } else if(dir == TURN_LEFT) {

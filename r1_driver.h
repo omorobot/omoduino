@@ -52,7 +52,8 @@ enum PL_LOAD_UNLOAD{
 enum TAG_Type{
     TAG_None                = 0,
     TAG_DEPOT               = 0xA0,     //160
-    TAG_POU                 = 0xA2,     //162
+    TAG_POU                 = 0xA1,     //161
+    TAG_STATION             = 0xA2,     //162
     TAG_APPROACH            = 0xAA,     //170
     TAG_TURN                = 0xB0,     //176
     TAG_LIFT                = 0xB1,     //177
@@ -142,7 +143,7 @@ private:
    int                     _v_dir;
    int                     _w_dir;
 
-   double                  _line_pos;
+   int8_t                  _line_pos;
    double                  _line_pos_last;
 
    int       _lineOut_timer;
