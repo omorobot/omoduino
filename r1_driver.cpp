@@ -358,6 +358,7 @@ void OMOROBOT_R1::begin() {
    turn_cmd.timer_start_millis = 0;
    turn_cmd.wait_cnt = 0;
    _odoRequest_millis_last = millis();
+   this->_emergency_state = false;
 }
 /**
  * @brief Register callback function for new data event
@@ -682,7 +683,11 @@ void OMOROBOT_R1::go(int target_speed)
       _target_speed = target_speed;
       _resume_speed = target_speed;
    }
-   _go_flag = true;
+   if(!this->_emergency_state) {
+      _go_flag = true;
+   } else {
+      Serial.println("NO GO: Emergency");
+   }
 }
 
 /**
@@ -695,7 +700,11 @@ void OMOROBOT_R1::go(void)
    _lineOut_timer = 0;
    _target_speed = _resume_speed;
    Controller.set_target_v(_target_speed);
-   _go_flag = true;
+   if(!this->_emergency_state) {
+      _go_flag = true;
+   } else {
+      Serial.println("NO GO: Emergency");
+   }
 }
 
 /**
@@ -733,4 +742,13 @@ double   OMOROBOT_R1::get_linePos() {  return _line_pos;}
 void OMOROBOT_R1::set_load_unload_stop()
 {
    _is_load_unload_finished = true;
+}
+
+void OMOROBOT_R1::set_emergency()
+{
+   this->_emergency_state = true;
+}
+void OMOROBOT_R1::clear_emergency()
+{
+   this->_emergency_state = false;
 }

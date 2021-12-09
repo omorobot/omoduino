@@ -159,6 +159,8 @@ public:
    int      get_target_speed(void);
    void     set_speed(int V);
    void     set_lineout_delay(int ms);
+   void     set_emergency();
+   void     clear_emergency();
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
@@ -176,6 +178,7 @@ private:
    uint64_t                _lineDetect_millis_last;            //Last time line detected millis
    bool                    _isLineOut;
    bool                    _go_flag;
+   bool                    _emergency_state;                //Indicate whether emergency is set
    int                     _cmd_speed;
    int                     _goal_V;
    int                     _goal_V_gain;
