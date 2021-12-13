@@ -150,6 +150,8 @@ public:
    double   get_linePos();
    void     set_load_unload_stop();
    void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
+   void     set_uturn_odo(int);
+   void     start_turn_degree(int deg, uint16_t speed);
    int      start_turn_odo(int turn_odo_cnt, uint16_t speed);
    void     start_turn_timer(PL_LOAD_UNLOAD load_unload, TURN_DIRECTION dir, int speed, int time);
    void     set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
@@ -185,7 +187,7 @@ private:
    int                     _goal_W;
    int                     _v_dir;
    int                     _w_dir;
-
+    int                     _uturn_odo;                 /// Odometry for 180 dgree turn
    double                  _line_pos;
    double                  _line_pos_last;
 

@@ -20,6 +20,27 @@ void OMOROBOT_R1::set_speed(int V)
 {
    _target_speed = V;
 }
+/**
+ * @brief Set odometry count for 180 degree turn
+ * 
+ * @param odo odometry count for uturn
+ */
+void OMOROBOT_R1::set_uturn_odo(int odo)
+{
+   this->_uturn_odo = odo;
+}
+
+void OMOROBOT_R1::start_turn_degree(int degree, uint16_t speed)
+{
+   if(degree > 0) {
+      this->turn_cmd.speed_w = speed;
+      this->turn_cmd.target_odo_cnt = degree * this->_uturn_odo / 180;
+   } else {
+      this->turn_cmd.speed_w = -speed;
+      this->turn_cmd.target_odo_cnt = - degree * this->_uturn_odo / 180;
+   }
+   this->turn_cmd.state_odo = 1;
+}
 
 /**
  * @brief Initiate turn process with odometer count
