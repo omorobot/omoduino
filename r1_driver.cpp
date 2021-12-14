@@ -524,6 +524,23 @@ void OMOROBOT_R1::new_can_odo(struct can_frame can_rx)
       _odo_l = (can_rx.data[4]|(can_rx.data[5]<<8)|(can_rx.data[6]<<16));
    }
 }
+
+void OMOROBOT_R1::new_can_bms(struct can_frame can_rx)
+{
+   this->_bms.voltage = (double)(can_rx.data[0]|(can_rx.data[1]<<8)) / 10.0;
+   this->_bms.soc = can_rx.data[2]|(can_rx.data[3]<<8);
+   this->_bms.current_mA = can_rx.data[4]|(can_rx.data[5]<<8);
+}
+
+uint16_t     OMOROBOT_R1::get_bmsSOC(void){
+   return this->_bms.soc;
+}
+double       OMOROBOT_R1::get_voltage(void){
+   return this->_bms.voltage;
+}
+uint16_t     OMOROBOT_R1::get_current_mA(void){
+   return this->_bms.current_mA;
+}
 /**
  * @brief Process new can message event from CAN-bus module
  * 

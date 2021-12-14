@@ -96,6 +96,13 @@ typedef struct Tag_Struct{
     TAG_Type    type;
 } Tag_Struct;
 
+/// BMS status
+typedef struct BMS_Struct{
+    double voltage;
+    uint16_t soc;
+    uint16_t current_mA;
+}BMS_Struct;
+
 /**
  * @brief OMOROBOT Motor driver class
  * 
@@ -140,6 +147,7 @@ public:
    void     set_lineoutTime(int ms);
    void     new_can_line(struct can_frame can_rx);
    void     new_can_odo(struct can_frame can_rx);
+   void     new_can_bms(struct can_frame can_rx);
    void     go(int target_speed);
    void     go(void);
    void     stop();
@@ -163,6 +171,9 @@ public:
    void     set_lineout_delay(int ms);
    void     set_emergency();
    void     clear_emergency();
+   uint16_t     get_bmsSOC(void);
+   double       get_voltage(void);
+   uint16_t     get_current_mA(void);
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    R1_NewDataClientEvent   _cbDataEvent;
@@ -218,6 +229,7 @@ private:
    Tag_Struct              _new_tagStr;          
    struct can_frame _canRxMsg;
    REMOTE_MODE             _remote_mode;
+   BMS_Struct _bms;
    void newCanRxEvent(can_frame can_rx);
    void turn_process_odo(void);
    void turn_process_timer(void);
