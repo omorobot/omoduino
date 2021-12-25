@@ -78,8 +78,8 @@ enum TAG_Type{
     TAG_TURN_PL             = 0xB2,     //178
     TAG_LOAD_UNLOAD_STOP    = 0xB3,     //179
     TAG_TURN_PL2            = 0xB4,     //180
-    TAG_CIN                 = 0xC1,     //193
     TAG_COUT                = 0xC0,     //192
+    TAG_CIN                 = 0xC1,     //193
     /// 속도 설정 태그
     TAG_SPEED               = 0xE0,     //224
     /// 초음파 On/Off 태그
