@@ -5,7 +5,7 @@
 #include <string.h>
 
 volatile int       _lineOut_timeOut_ms;
-volatile uint8_t   _tag_data_prev[4];
+//volatile uint8_t   _tag_data_prev[4];
 int turn_wait_timer = 0;
 /**
  * @brief Get target speed set
@@ -386,13 +386,13 @@ void OMOROBOT_R1::begin() {
  * 
  * @param cbEvent 
  */
-void OMOROBOT_R1::onNewData(R1_NewDataClientEvent cbEvent){ _cbDataEvent = cbEvent;}
+//void OMOROBOT_R1::onNewData(R1_NewDataClientEvent cbEvent){ _cbDataEvent = cbEvent;}
 /**
  * @brief Register callback function for new TAG message event
  * 
  * @param cbEvent 
  */
-void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent){ _cbTagEvent = cbEvent;}
+//void OMOROBOT_R1::onNewTag(R1_NewTagReadEvent cbEvent){ _cbTagEvent = cbEvent;}
 /**
 * @brief R1 main loop
 */
@@ -485,19 +485,19 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       _line_pos = (double)line_pos;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;     //reset lineout timer
-      tag_data[0] = can_rx.data[4];
-      tag_data[1] = can_rx.data[5];
-      tag_data[2] = can_rx.data[6];
-      tag_data[3] = can_rx.data[7];
+      // tag_data[0] = can_rx.data[4];
+      // tag_data[1] = can_rx.data[5];
+      // tag_data[2] = can_rx.data[6];
+      // tag_data[3] = can_rx.data[7];
 
-      if(memcmp(_tag_data_prev, tag_data, 4)!=0) {      //Not the same tag data
-         _tag_data_prev[0] = _new_tagStr.bytes[0] = can_rx.data[4];
-         _tag_data_prev[1] = _new_tagStr.bytes[1] = can_rx.data[5];
-         _tag_data_prev[2] = _new_tagStr.bytes[2] = can_rx.data[6];
-         _tag_data_prev[3] = _new_tagStr.bytes[3] = can_rx.data[7];
-         _new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
-         _cbTagEvent(_new_tagStr);
-      }
+      // if(memcmp(_tag_data_prev, tag_data, 4)!=0) {      //Not the same tag data
+      //    _tag_data_prev[0]  = can_rx.data[4];
+      //    _tag_data_prev[1]  = can_rx.data[5];
+      //    _tag_data_prev[2]  = can_rx.data[6];
+      //    _tag_data_prev[3]  = can_rx.data[7];
+      //    //_new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
+      //    _cbTagEvent(tag_data);
+      // }
    }
       break;
    case 2:   //No line
@@ -507,7 +507,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
             _go_flag = false;    //Stop the line tracer
          }
       }
-      _cbDataEvent(R1MSG_LINEOUT);
+      //_cbDataEvent(R1MSG_LINEOUT);
       break;
    }
 }
@@ -557,7 +557,7 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
          _line_pos = (double)_canRxMsg.data[1]; //was int8_t
          _lineDetect_millis_last = millis();    //Update line detection time
          _lineOut_timer = 0;
-         _cbDataEvent(R1MSG_LINEPOS);
+         //_cbDataEvent(R1MSG_LINEPOS);
          break;
       case 2:   //No line
          _isLineOut = true;
@@ -566,14 +566,14 @@ void OMOROBOT_R1::newCanRxEvent(struct can_frame _canRxMsg)
                _go_flag = false;
             }
          } 
-         _cbDataEvent(R1MSG_LINEOUT);
+         //_cbDataEvent(R1MSG_LINEOUT);
          break;
       }
    } else if(senderID == 0x4) {
       if(_canRxMsg.data[0] == 0x02) {
          _odo_r = (_canRxMsg.data[1]|(_canRxMsg.data[2]<<8));
          _odo_l = (_canRxMsg.data[3]|(_canRxMsg.data[4]<<8));
-         _cbDataEvent(R1MSG_ODO);
+         //_cbDataEvent(R1MSG_ODO);
       }
    } else if(senderID == 0x06) {   //From conveyor
       

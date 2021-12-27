@@ -61,40 +61,7 @@ enum PL_LOAD_UNLOAD{
     PL_LOADING,
     PL_UNLOADING
 };
-/// 지원하는 TAG 종류
-enum TAG_Type{
-    TAG_None                = 0,
-    /// DEPOT
-    TAG_DEPOT               = 0xA0,     //160
-    /// POU
-    TAG_POU                 = 0xA2,     //162
-    /// 어프로치 태그
-    TAG_APPROACH            = 0xA3,     //163
-    /// 유턴 동작
-    TAG_UTURN               = 0xB0,     //176
-    /// 리프트 동작 태그 (PL153 타입)
-    TAG_LIFT                = 0xB1,     //177
-    /// PL153형 턴 태그
-    TAG_TURN_PL             = 0xB2,     //178
-    TAG_LOAD_UNLOAD_STOP    = 0xB3,     //179
-    TAG_TURN_PL2            = 0xB4,     //180
-    TAG_COUT                = 0xC0,     //192
-    TAG_CIN                 = 0xC1,     //193
-    /// 속도 설정 태그
-    TAG_SPEED               = 0xE0,     //224
-    /// 초음파 On/Off 태그
-    TAG_SONAR               = 0xE2,     //226
-    /// 로봇 정지 및 대기 태그
-    TAG_READY               = 0xFE      //254
-};
 
-/// 태그 정보를 담은 구조체
-typedef struct Tag_Struct{
-    /// 태그 바이트
-    uint8_t     bytes[4];
-    /// 태그 종류
-    TAG_Type    type;
-} Tag_Struct;
 
 /// BMS status
 typedef struct BMS_Struct{
@@ -130,15 +97,15 @@ public:
       ///Timer ms for turning 
       uint64_t timer_start_millis;  
    }TurnCommandStruct;  
-   typedef void (*R1_NewDataClientEvent)(R1_MessageType);
-   typedef void (*R1_NewTagReadEvent)(Tag_Struct);
+   //typedef void (*R1_NewDataClientEvent)(R1_MessageType);
+   //typedef void (*R1_NewTagReadEvent)(const uint8_t[4]);
    OMOROBOT_R1();
    OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
    OMOROBOT_R1(MCP2515* mcp2515);
 
    void     begin(void);
-   void     onNewData(R1_NewDataClientEvent cbEvent);
-   void     onNewTag(R1_NewTagReadEvent cbEvent);
+   //void     onNewData(R1_NewDataClientEvent cbEvent);
+   //void     onNewTag(R1_NewTagReadEvent cbEvent);
    void     spin(void);
    void     control_motor_VW(int V, int W);
    void     request_odo();
@@ -176,8 +143,8 @@ public:
    uint16_t     get_current_mA(void);
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
-   R1_NewDataClientEvent   _cbDataEvent;
-   R1_NewTagReadEvent      _cbTagEvent;
+   //R1_NewDataClientEvent   _cbDataEvent;
+   //R1_NewTagReadEvent      _cbTagEvent;
    DRIVE_MODE              _drive_mode;
    R1_VEHICLE_TYPE         _vehicle_type;
    R1_Controller           Controller;
@@ -226,7 +193,7 @@ private:
    
    uint16_t                _same_tag_reset_timer;
     //Turn odo count to stop turn
-   Tag_Struct              _new_tagStr;          
+   //Tag_Struct              _new_tagStr;          
    struct can_frame _canRxMsg;
    REMOTE_MODE             _remote_mode;
    BMS_Struct _bms;
