@@ -474,9 +474,6 @@ void OMOROBOT_R1::set_lineout_delay(int ms)
 */
 void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
-   uint8_t tag_diff_cnt = 0;
-   int i;
-   uint8_t tag_data[4];
    switch(can_rx.data[0]) {
    case 1:   //Line detect
    {
@@ -485,19 +482,11 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       _line_pos = (double)line_pos;
       _lineDetect_millis_last = millis();    //Update line detection time
       _lineOut_timer = 0;     //reset lineout timer
-      // tag_data[0] = can_rx.data[4];
-      // tag_data[1] = can_rx.data[5];
-      // tag_data[2] = can_rx.data[6];
-      // tag_data[3] = can_rx.data[7];
-
-      // if(memcmp(_tag_data_prev, tag_data, 4)!=0) {      //Not the same tag data
-      //    _tag_data_prev[0]  = can_rx.data[4];
-      //    _tag_data_prev[1]  = can_rx.data[5];
-      //    _tag_data_prev[2]  = can_rx.data[6];
-      //    _tag_data_prev[3]  = can_rx.data[7];
-      //    //_new_tagStr.type = (TAG_Type)_new_tagStr.bytes[3];
-      //    _cbTagEvent(tag_data);
-      // }
+      uint8_t tagAck = can_rx.data[4];
+      tagAck += can_rx.data[5];
+      tagAck += can_rx.data[6];
+      tagAck += can_rx.data[7];
+      tagAck = ~tagAck;
    }
       break;
    case 2:   //No line
@@ -540,6 +529,9 @@ double       OMOROBOT_R1::get_voltage(void){
 }
 uint16_t     OMOROBOT_R1::get_current_mA(void){
    return this->_bms.current_mA;
+}
+void        OMOROBOT_R1::send_tagAck(uint8_t ack) {
+   this->CanBus.send_tagAck(ack);
 }
 /**
  * @brief Process new can message event from CAN-bus module

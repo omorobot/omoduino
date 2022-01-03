@@ -74,6 +74,7 @@ public:
    void cmd_pl_dac_angle(int16_t dac, int16_t angle);
    void request_odo(bool reset);
    void set_pl_lift_mode(PL_LIFT_MODE_TYPE mode);
+   void send_tagAck(uint8_t);
 
 private:
    typedef struct CanCommandType{
@@ -98,9 +99,11 @@ private:
    CanCommandType          _canCmd;
    struct can_frame        _can_tx_odo;
    struct can_frame        _can_tx_cmd;
+   struct can_frame        _can_tx_tagAck;
    bool _can_extern;
    void sendCommand(CanCommandType cmd);
-   int can_TxMsg_init(can_frame* frame, int id, int dlc);
+   int can_TxMsg_init(can_frame* frame, uint16_t stdId, int dlc);
+   void init_can_txmsgs();
 };
 
 #endif

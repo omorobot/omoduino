@@ -141,6 +141,7 @@ public:
    uint16_t     get_bmsSOC(void);
    double       get_voltage(void);
    uint16_t     get_current_mA(void);
+   void     send_tagAck(uint8_t);
 private:
    //typedef void (OMOROBOT_R1::*m_process)(void);
    //R1_NewDataClientEvent   _cbDataEvent;

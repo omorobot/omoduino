@@ -8,8 +8,7 @@
 R1_CanBus::R1_CanBus(void)
 {
    _mcp2515 = new MCP2515(10);
-   can_TxMsg_init(&_can_tx_cmd, 0x4, 8);
-   can_TxMsg_init(&_can_tx_odo, 0x4, 8);
+   this->init_can_txmsgs();
 }
 /**
  * @brief Construct a new r1 canbus::r1 canbus object
@@ -19,8 +18,7 @@ R1_CanBus::R1_CanBus(void)
 R1_CanBus::R1_CanBus(uint16_t cspin)
 {
    _mcp2515 = new MCP2515(cspin);
-   can_TxMsg_init(&_can_tx_cmd, 0x4, 8);
-   can_TxMsg_init(&_can_tx_odo, 0x4, 8);
+   this->init_can_txmsgs();
 }
 /**
  * @brief Construct a new r1 canbus::r1 canbus object
@@ -30,8 +28,14 @@ R1_CanBus::R1_CanBus(uint16_t cspin)
 R1_CanBus::R1_CanBus(MCP2515* mcp2515)
 {
    _mcp2515 = mcp2515;
-   can_TxMsg_init(&_can_tx_cmd, 0x4, 8);
-   can_TxMsg_init(&_can_tx_odo, 0x4, 8);
+   this->init_can_txmsgs();
+}
+
+void R1_CanBus::init_can_txmsgs(void)
+{
+   can_TxMsg_init(&_can_tx_cmd, 0x14, 8);
+   can_TxMsg_init(&_can_tx_odo, 0x14, 8);
+   can_TxMsg_init(&_can_tx_tagAck, 0x12, 2);
 }
 /**
  * @brief Start CAN-bus network with default CAN baud rate
@@ -209,21 +213,24 @@ void R1_CanBus::sendCommand(CanCommandType cmd)
    _can_tx_cmd.data[4] = (cmd.data_2>>8)&0xFF;
    _can_tx_cmd.data[5] = cmd.aux_byte;
    _mcp2515->sendMessage(&_can_tx_cmd);
-
+}
+void R1_CanBus::send_tagAck(uint8_t ack)
+{
+   _can_tx_tagAck.data[0] = ack;
+   _mcp2515->sendMessage(&_can_tx_tagAck);
 }
 /**
  * @brief Initialize can tx message
  * 
  * @param frame can tx frame
- * @param id stdID
+ * @param stdId stdID
  * @param dlc data length
  * @return int 0 for successful initialization
  */
-int R1_CanBus::can_TxMsg_init(can_frame* frame, int id, int dlc)
+int R1_CanBus::can_TxMsg_init(can_frame* frame, uint16_t stdId, int dlc)
 {
-   if(id>255) return 1;
-   if(dlc>8 || dlc<1) return 2;
-   frame->can_id = (1<<4)|id;
+   if(dlc>8 || dlc<1) return 1;
+   frame->can_id = stdId;
    frame->can_dlc = dlc;
    for(int i = 0; i<dlc; i++) {
       frame->data[i] = 0;
