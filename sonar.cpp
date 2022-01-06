@@ -7,7 +7,8 @@ double      _alpha = 0.85;       //Complementary filter value
 //int         _detection_range = 40;
 double      _analog_to_cm_gain = 1.0;
 /**
- * @brief Construct a new SONAR::SONAR object as analog type sensor
+ * @brief 아날로그 타입의 SONAR::SONAR 객체를 생성합니다.\n
+ * Construct a new SONAR::SONAR object as analog type sensor
  * 
  * @param analogPin analog pin
  */
@@ -21,8 +22,8 @@ SONAR::SONAR(int analogPin)
    this->_measure_cnt = 0;
 }
 /**
- * @brief Construct a new SONAR::SONAR object as trigger echo type sensor
- * 
+ * @brief 트리거&에코 타입의 SONAR::SONAR 객체를 생성합니다.\n
+ * Construct a new SONAR::SONAR object as trigger echo type sensor
  * @param pin_trigger Trigger pin
  * @param pin_echo Echo pin
  */
@@ -37,7 +38,8 @@ SONAR::SONAR(int pin_trigger, int pin_echo) {
    _enabled = true;
 }
 /**
- * @brief Measure distance in CM from sonar
+ * @brief 초음파 센서로부터 거리를 측정하고 거리값(cm)을 반환합니다.\n
+ * Measure distance in CM from sonar
  * 
  * @return double distance in cm
  */
@@ -89,8 +91,8 @@ double SONAR::measure_cm() {
    }
 }
 /**
- * @brief Get the latest sensor reading
- * 
+ * @brief 가장 최신의 센서 값을 측정합니다.
+ * Get the latest sensor reading
  * @return double distance in cm
  */
 double SONAR::get_distance()
@@ -107,7 +109,8 @@ double SONAR::get_distance()
 }
 
 /**
- * @brief Check if measured distance from object below minimum range
+ * @brief 초음파로 감지된 물체가 장애물 인지거리 이내인지 확인합니다.\n
+ * Check if measured distance from object below minimum range
  * 
  * @return true if object within detection range
  * @return false if object beyond detction range
@@ -133,14 +136,15 @@ bool SONAR::detected() {
    return detected;
 }
 /**
- * @brief set detection threshold value
+ * @brief 초음파 감지 거리를 설정합니다.\n
+ * Set detection threshold value.
  * */
 void SONAR::set_range(int range) {
    this->_detection_range = range;
 }
 /**
- * @brief Enable sonar
- * 
+ * @brief 초음파 센서를 Enable 또는 Disable 합니다.\n
+ * Enable/Disable sonar.
  * @param en 
  */
 void SONAR::set_enable(bool en) {

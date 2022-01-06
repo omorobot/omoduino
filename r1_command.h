@@ -27,26 +27,29 @@
 #define CAN_MOTOR_CMD_RPM        0x87
 #define CAN_MOTOR_CMD_PWM        0x88
 
+/// Omoduino에서 지원하는 드라이버 방식
 enum R1_VEHICLE_TYPE {
    VEHICLE_TYPE_R1,     ///< R1 형 모터 드라이버
    VEHICLE_TYPE_PL153   ///< PL153형 모터 드라이버
 };
+/// Omoduino의 제어 모드
 enum R1_CONTROL_MODE_TYPE{
    CONTROL_MODE_VW,     ///< V mm/s, mrad/s 제어방식 구동
    CONTROL_MODE_DIFFV,  ///< 좌/우 바퀴 속도 mm/s 제어방식 구동
    CONTROL_MODE_RPM,    ///< 좌/우 바퀴 RPM 제어방식 구동
    CONTROL_MODE_DAC_ANGLE  ///< 전/후진 속도 및 조향각 제어방식 구동
 };
+
 enum PL_LIFT_MODE_TYPE {
    PL_LIFT_STOP = 0,
    PL_LIFT_UP   = 1,
    PL_LIFT_DOWN = 2
 };
-
+/// R1에서 사용하는 메세지 타입
 enum R1_MessageType{
-   R1MSG_ODO,
-   R1MSG_LINEPOS,
-   R1MSG_LINEOUT
+   R1MSG_ODO,        ///< Odometry 메세지
+   R1MSG_LINEPOS,    ///< Line 위치 메세지
+   R1MSG_LINEOUT     ///< Lineout 메세지
 };
 
 class MCP2515;
