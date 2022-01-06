@@ -20,15 +20,16 @@
 #define PID_LINE_FILTER_ALPHA_DEFAULT  0.95 //was 0.8
 #define V_CONTROL_ACCEL_DEFAULT        1
 
-typedef struct {
-   double      Kp;
-   double      Ki;
-   double      Kd;
-   double      error_prev;
-   double      error_i;
-   double      error_i_max;
-   double      out_max;
-   uint64_t    last_update_millis;
+/// PID 제어 게인 구조체
+typedef struct PID_Type{
+   double      Kp;            ///< P 게인
+   double      Ki;            ///< I 게인
+   double      Kd;            ///< D 게인
+   double      error_prev;    ///< 이전 에러값
+   double      error_i;       ///< 에러 누적값
+   double      error_i_max;   ///< 에러 누적 최대값
+   double      out_max;       ///< Output 최대값
+   uint64_t    last_update_millis;  ///< 마지막 업데이트 millis
 }PID_Type;
 
 class R1_Controller {

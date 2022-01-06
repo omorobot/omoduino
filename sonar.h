@@ -28,8 +28,8 @@
 class SONAR
 {
    typedef enum {
-      SONAR_TYPE_TRIGGER_ECHO = 0,        //Sonar type is trigger, echo type
-      SONAR_TYPE_ANALOG       = 1         //Sonar type is analog
+      SONAR_TYPE_TRIGGER_ECHO = 0,        ///< Sonar type is trigger, echo type
+      SONAR_TYPE_ANALOG       = 1         ///< Sonar type is analog
    }SonarType;
 public:
    SONAR(int analogPin);

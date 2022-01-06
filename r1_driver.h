@@ -23,11 +23,10 @@
 //#define SAME_TAG_REFRESH_EN       //Uncomment this to refresh same tag filter after certain period
 class MCP2515;
 
+/// 구동 모드
 enum DRIVE_MODE{
-    /// 기본 구동 제어 모드
-    DRIVE_MODE_DEFAULT,
-    /// 라인센서가 있는 경우 이 모드로 설정하면 라인 Following 모드로 제어됨
-    DRIVE_MODE_LINETRACER        
+    DRIVE_MODE_DEFAULT,    ///< 기본 구동 제어 모드
+    DRIVE_MODE_LINETRACER  ///< 라인센서가 있는 경우 이 모드로 설정하면 라인 Following 모드로 제어됨
 };
 
 enum REMOTE_MODE{
@@ -35,40 +34,29 @@ enum REMOTE_MODE{
    REMOTE_SBUS,
    REMOTE_JOY
 };
-
+///구동 직진 방향
 enum DRIVE_DIRECTION{
-    /// 속도 명령의 +가 전진 방향인 경우
-    DIRECTION_FORWARD,
-    /// 속도 명령의 +가 후진 방향인 경우
-    DIRECTION_REVERSE
+   DIRECTION_FORWARD,      ///< 속도 명령의 +가 전진 방향인 경우
+   DIRECTION_REVERSE       ///< 속도 명령의 +가 후진 방향인 경우
 };
-
+/// 라인센서 방향
 enum LINE_FACING{
-    /// 라인센서가 진행 방향으로 설치된 경우
-    FACING_FORWARD,
-    /// 라인센서가 진행 방향에 반대 방향으로 설치된 경우
-    FACING_REVERSE
+   FACING_FORWARD,      ///< 라인센서가 진행 방향으로 설치된 경우 
+   FACING_REVERSE       ///< 라인센서가 진행 방향에 반대 방향으로 설치된 경우
 };
-
+/// 회전 방향
 enum TURN_DIRECTION{
-    /// 좌회전
-    TURN_LEFT = 1,
-    /// 우회전
-    TURN_RIGHT = 2
+   TURN_LEFT = 1,    ///< 좌회전
+   TURN_RIGHT = 2    ///> 우회전
 };
-
+/// PL1500 리프트 업/다운 제어
 enum PL_LOAD_UNLOAD{
     PL_LOADING,
     PL_UNLOADING
 };
 
 
-/// BMS status
-typedef struct BMS_Struct{
-    double voltage;
-    uint16_t soc;
-    uint16_t current_mA;
-}BMS_Struct;
+
 
 /**
  * @brief OMOROBOT Motor driver class
@@ -79,28 +67,28 @@ class OMOROBOT_R1
    typedef int (R1_Controller::*m_line_control_event)(double);
    typedef int (R1_Controller::*m_speed_control_event)(int, bool);
 public:
+    /// BMS status
+   typedef struct BMS_Struct{
+      double voltage;
+      uint16_t soc;
+      uint16_t current_mA;
+   }BMS_Struct;
+
    typedef struct TurnCommandStruct{
-       /// turning odo count
-      int      target_odo_cnt;  
-      /// Speed for turning;
-      int      speed_v;         
-      /// Rotational velocity for turning
-      int      speed_w;         
-      /// turn odo process state num
-      int      state_odo;       
-      /// turn timer process state num
-      int      state_timer;     
+      int      target_odo_cnt;   ///< turning odo count
+      int      speed_v;          ///< Speed for turning;
+      int      speed_w;          ///< Rotational velocity for turning
+      int      state_odo;        ///< turn odo process state num
+      int      state_timer;      ///< turn timer process state num
       int      state_timer2;
       uint64_t target_timer_set;
-      ///wait timer count for delayed process
-      uint16_t wait_cnt;      
-      ///Timer ms for turning 
-      uint64_t timer_start_millis;  
+      uint16_t wait_cnt;            ///< wait timer count for delayed process
+      uint64_t timer_start_millis;  ///< Timer ms for turning 
    }TurnCommandStruct;  
    //typedef void (*R1_NewDataClientEvent)(R1_MessageType);
    //typedef void (*R1_NewTagReadEvent)(const uint8_t[4]);
    OMOROBOT_R1();
-   OMOROBOT_R1(uint16_t cspin);        //Added to support for different cs pin
+   OMOROBOT_R1(uint16_t cspin);        ///< Added to support for different cs pin
    OMOROBOT_R1(MCP2515* mcp2515);
 
    void     begin(void);
@@ -143,40 +131,34 @@ public:
    uint16_t     get_current_mA(void);
    void     send_tagAck(uint8_t);
 private:
-   //typedef void (OMOROBOT_R1::*m_process)(void);
-   //R1_NewDataClientEvent   _cbDataEvent;
-   //R1_NewTagReadEvent      _cbTagEvent;
    DRIVE_MODE              _drive_mode;
    R1_VEHICLE_TYPE         _vehicle_type;
    R1_Controller           Controller;
 
    m_speed_control_event   m_5ms_speed_control;
    m_line_control_event    m_10ms_line_control;
-   //m_process               m_turn_process;
    R1_CanBus               CanBus;
    TurnCommandStruct       turn_cmd;
    uint64_t                _odoRequest_millis_last;
-   uint64_t                _lineDetect_millis_last;            //Last time line detected millis
+   uint64_t                _lineDetect_millis_last;            ///< Last time line detected millis
    bool                    _isLineOut;
    bool                    _go_flag;
-   bool                    _emergency_state;                //Indicate whether emergency is set
+   bool                    _emergency_state;                ///< Indicate whether emergency is set
    int                     _cmd_speed;
    int                     _goal_V;
    int                     _goal_V_gain;
    int                     _goal_W;
    int                     _v_dir;
    int                     _w_dir;
-    int                     _uturn_odo;                 /// Odometry for 180 dgree turn
+    int                     _uturn_odo;                 ///< Odometry for 180 dgree turn
    double                  _line_pos;
    double                  _line_pos_last;
 
    int       _lineOut_timer;
-   /// Wait time to stop when line out detected
-   int       _lineOut_timeOut_ms;    
-   /// target speed when go flag is set
-   int       _target_speed;          
-   /// target speed when paused
-   int       _resume_speed;          
+   
+   int       _lineOut_timeOut_ms;    ///< Wait time to stop when line out detected
+   int       _target_speed;          ///< target speed when go flag is set
+   int       _resume_speed;          ///< target speed when paused
 
    PL_LOAD_UNLOAD          _load_unload;
    bool                    _is_load_unload_finished;
@@ -185,12 +167,9 @@ private:
    int                     _odo_r;
 
    uint64_t                _5ms_loop_millis_last;
-   /// _10ms_loop_millis_last;
-   uint64_t                _loop_control_next_millis; 
-
+   uint64_t                _loop_control_next_millis;    ///< _10ms_loop_millis_last;
    uint64_t                _100ms_loop_millis_last;
-   //Can rx read performed externally
-   bool                    _can_rx_extern = false;   
+   bool                    _can_rx_extern = false;       ///< Can rx read performed externally
    
    uint16_t                _same_tag_reset_timer;
     //Turn odo count to stop turn
