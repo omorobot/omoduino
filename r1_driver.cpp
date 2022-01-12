@@ -474,9 +474,7 @@ void OMOROBOT_R1::set_lineout_delay(int ms)
 */
 void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
-   switch(can_rx.data[0]) {
-   case 1:   //Line detect
-   {
+   if(can_rx.data[0]&0x01) {
       _isLineOut = false;
       int8_t line_pos = can_rx.data[1];
       _line_pos = (double)line_pos;
@@ -487,17 +485,13 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       tagAck += can_rx.data[6];
       tagAck += can_rx.data[7];
       tagAck = ~tagAck;
-   }
-      break;
-   case 2:   //No line
+   } else {
       _isLineOut = true;
       if(_lineOut_timeOut_ms > 0) {
          if( (millis() - _lineDetect_millis_last) > _lineOut_timeOut_ms) {
             _go_flag = false;    //Stop the line tracer
          }
       }
-      //_cbDataEvent(R1MSG_LINEOUT);
-      break;
    }
 }
 /**
