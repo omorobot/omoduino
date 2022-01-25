@@ -156,7 +156,7 @@ private:
 
    int       _lineOut_timer;
    
-   int       _lineOut_timeOut_ms;    ///< Wait time to stop when line out detected
+   uint32_t  _lineOut_timeOut_ms;    ///< Wait time to stop when line out detected
    int       _target_speed;          ///< target speed when go flag is set
    int       _resume_speed;          ///< target speed when paused
 
