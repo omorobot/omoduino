@@ -476,6 +476,47 @@ void OMOROBOT_R1::set_lineout_delay(int ms)
 */
 void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
 {
+  switch(can_rx.data[0]){
+      case 0:
+         _isLineOut = true;
+         if(_lineOut_timeOut_ms > 0) {
+            if( (millis() - _lineDetect_millis_last) > _lineOut_timeOut_ms) {
+               _go_flag = false;    //Stop the line tracer
+            }
+         }
+      break;
+      case 1:
+      {
+         _isLineOut = false;
+         int8_t line_pos = can_rx.data[1];
+         _line_pos = (double)line_pos;
+         _lineDetect_millis_last = millis();    //Update line detection time
+         _lineOut_timer = 0;     //reset lineout timer
+         uint8_t tagAck = can_rx.data[4];
+         tagAck += can_rx.data[5];
+         tagAck += can_rx.data[6];
+         tagAck += can_rx.data[7];
+         tagAck = ~tagAck;
+      }
+      break;
+      case 2:
+         if(turn_cmd.state_odo == 0){
+            start_turn_degree(90,200);
+            Serial.println("Turn Left");
+          }
+      break;
+      case 3:
+         if(turn_cmd.state_odo == 0){
+            start_turn_degree(-90,200);
+            Serial.println("Turn Right");
+         }
+      break;
+      case 4:
+         Serial.println("Turn Branch");
+      break;
+   }
+
+   /*
    if(can_rx.data[0]&0x01) {
       _isLineOut = false;
       int8_t line_pos = can_rx.data[1];
@@ -495,6 +536,7 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
          }
       }
    }
+   */
 }
 /**
 * @brief Process odoMsg from can bus
