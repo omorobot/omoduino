@@ -467,12 +467,19 @@ void OMOROBOT_R1::spin() {
       }
       if(this->move_state_odo > 0){
          this->start_move_odo(60,50);
-      }
-
-      if(this->_line_turn_flag){
-         if(move_state_odo == 0){
-            start_turn_degree(90,300);
-            _line_turn_flag = 0;
+      }else{
+         switch(this->_line_turn_direction)
+         {
+            case TURN_NONE:
+            break;
+            case TURN_LEFT:
+               start_turn_degree(90,300);
+               this->_line_turn_direction = TURN_NONE;
+            break;
+            case TURN_RIGHT:
+               start_turn_degree(-90,300);
+               this->_line_turn_direction = TURN_NONE;
+            break;
          }
       }
       _odoRequest_millis_last = millis();
@@ -560,24 +567,23 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       case 2:
          if(this->move_state_odo == 0){
             this->move_state_odo = 1;
-            this->_line_turn_flag = 1;
-            Serial.println("Line Turn process");
+            this->_line_turn_direction = TURN_LEFT;
+            Serial.println("Line Left Turn process");
          }
-         /*
-         if(turn_cmd.state_odo == 0){
-            start_turn_degree(90,200);
-            Serial.println("Turn Left");
-          }
-          */
       break;
       case 3:
-         if(turn_cmd.state_odo == 0){
-            start_turn_degree(-90,200);
-            Serial.println("Turn Right");
+         if(this->move_state_odo == 0){
+            this->move_state_odo = 1;
+            this->_line_turn_direction = TURN_RIGHT;
+            Serial.println("Line Right Turn process");
          }
       break;
       case 4:
-         Serial.println("Turn Branch");
+         if(this->move_state_odo == 0){
+            this->move_state_odo = 1;
+            this->_line_turn_direction = TURN_LEFT;
+            Serial.println("Line Branch Turn process");
+         }
       break;
    }
 

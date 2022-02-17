@@ -46,15 +46,16 @@ enum LINE_FACING{
 };
 /// 회전 방향
 enum TURN_DIRECTION{
+   TURN_NONE = 0,
    TURN_LEFT = 1,    ///< 좌회전
    TURN_RIGHT = 2    ///> 우회전
 };
+
 /// PL1500 리프트 업/다운 제어
 enum PL_LOAD_UNLOAD{
     PL_LOADING,
     PL_UNLOADING
 };
-
 
 
 
@@ -142,10 +143,10 @@ private:
    TurnCommandStruct       turn_cmd;
    uint64_t                _odoRequest_millis_last;
    uint64_t                _lineDetect_millis_last;            ///< Last time line detected millis
+   uint8_t                 _line_turn_direction;
    bool                    _isLineOut;
    bool                    _go_flag;
    bool                    _emergency_state;                ///< Indicate whether emergency is set
-   bool                    _line_turn_flag;
    int                     _cmd_speed;
    int                     _goal_V;
    int                     _goal_V_gain;
