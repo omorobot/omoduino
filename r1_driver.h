@@ -113,6 +113,7 @@ public:
    double   get_linePos();
    void     set_load_unload_stop();
    void     set_drive_direction(DRIVE_DIRECTION dir, LINE_FACING);
+   void     start_move_odo(int move_odo_cnt,uint16_t speed);
    void     set_uturn_odo(int);
    void     start_turn_degree(int deg, uint16_t speed);
    int      start_turn_odo(int turn_odo_cnt, uint16_t speed);
@@ -144,15 +145,17 @@ private:
    bool                    _isLineOut;
    bool                    _go_flag;
    bool                    _emergency_state;                ///< Indicate whether emergency is set
+   bool                    _line_turn_flag;
    int                     _cmd_speed;
    int                     _goal_V;
    int                     _goal_V_gain;
    int                     _goal_W;
    int                     _v_dir;
    int                     _w_dir;
-    int                     _uturn_odo;                 ///< Odometry for 180 dgree turn
+   int                     _uturn_odo;                 ///< Odometry for 180 dgree turn
    double                  _line_pos;
    double                  _line_pos_last;
+   int                     move_state_odo;
 
    int       _lineOut_timer;
    

@@ -20,6 +20,53 @@ void OMOROBOT_R1::set_speed(int V)
 {
    _target_speed = V;
 }
+
+void OMOROBOT_R1::start_move_odo(int move_odo_cnt,uint16_t speed)
+{
+   switch(move_state_odo){
+      case 0:
+      break;
+      case 1:
+         Serial.println("Start move odo");
+         _go_flag = false;
+         _goal_W = 0; 
+         move_state_odo = 2;
+      break;
+      case 2:
+         if(_cmd_speed == 0) {
+            Serial.println("odo reset");
+            _odo_reset = true;
+            move_state_odo = 3;
+         }
+      break;
+      case 3:
+         if(this->turn_cmd.wait_cnt++ > 100) {
+            Serial.println("odo wait");
+            turn_cmd.wait_cnt = 0;
+            _odo_reset = false;
+            move_state_odo = 4;
+         }
+      break;
+      case 4:
+         if(abs(_odo_l) < 50) {   //Check odometry reset
+            Serial.println("odo reset success");
+            _odo_reset = false;
+            move_state_odo = 5;
+            _target_speed = speed;
+            Controller.set_target_v(_target_speed);
+            _go_flag = true;
+         }
+      break;
+      case 5:
+         if(abs(_odo_l) > move_odo_cnt) {  //Finish turn at _turn_odo_cnt set
+            Serial.println("MOVE ODO met GOAL");
+            move_state_odo = 0;
+            _go_flag = false;
+         }
+      break;
+   }
+}
+
 /**
  * @brief Set odometry count for 180 degree turn
  * 
@@ -107,7 +154,7 @@ void OMOROBOT_R1::turn_process_odo(void)
       _goal_W = 0;
       if(_cmd_speed == 0) {
          _odo_reset = true;
-         if(this->turn_cmd.wait_cnt++ > 200) {
+         if(this->turn_cmd.wait_cnt++ > 100) {
             turn_cmd.state_odo = 2;
             turn_cmd.wait_cnt = 0;
             _odo_reset = false;
@@ -361,6 +408,7 @@ void OMOROBOT_R1::begin() {
    if(!_can_rx_extern) {
       CanBus.begin_bus();
    }
+   move_state_odo = 0;
    _go_flag = false;
    _target_speed = 0;
    _goal_V = 0;
@@ -416,6 +464,16 @@ void OMOROBOT_R1::spin() {
       }
       if(this->turn_cmd.state_odo > 0) {
          this->turn_process_odo();
+      }
+      if(this->move_state_odo > 0){
+         this->start_move_odo(60,50);
+      }
+
+      if(this->_line_turn_flag){
+         if(move_state_odo == 0){
+            start_turn_degree(90,300);
+            _line_turn_flag = 0;
+         }
       }
       _odoRequest_millis_last = millis();
 
@@ -500,10 +558,17 @@ void OMOROBOT_R1::new_can_line(struct can_frame can_rx)
       }
       break;
       case 2:
+         if(this->move_state_odo == 0){
+            this->move_state_odo = 1;
+            this->_line_turn_flag = 1;
+            Serial.println("Line Turn process");
+         }
+         /*
          if(turn_cmd.state_odo == 0){
             start_turn_degree(90,200);
             Serial.println("Turn Left");
           }
+          */
       break;
       case 3:
          if(turn_cmd.state_odo == 0){
