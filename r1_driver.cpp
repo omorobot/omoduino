@@ -32,14 +32,16 @@ void OMOROBOT_R1::set_uturn_odo(int odo)
 
 void OMOROBOT_R1::start_turn_degree(int degree, uint16_t speed)
 {
+   float turn_odo = (float)this->_uturn_odo / 180.0f * (float) degree;     //Fixed issue when divide by 180
    if(degree > 0) {
       this->turn_cmd.speed_w = speed;
-      this->turn_cmd.target_odo_cnt = degree * this->_uturn_odo / 180;
+      this->turn_cmd.target_odo_cnt = (int)turn_odo;
    } else {
       this->turn_cmd.speed_w = -speed;
-      this->turn_cmd.target_odo_cnt = - degree * this->_uturn_odo / 180;
+      this->turn_cmd.target_odo_cnt = - (int) turn_odo;
    }
    this->turn_cmd.state_odo = 1;
+   //Serial.print("Turn odo:");Serial.println(this->turn_cmd.target_odo_cnt);
 }
 
 /**
